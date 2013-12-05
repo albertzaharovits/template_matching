@@ -1,8 +1,9 @@
 #include "colorimage.h"
 
 using namespace std;
+
 /* ColorImage class*/
-ColorImage::ColorImage(const std::string file_name) {
+Image::ColorImage::ColorImage(const std::string file_name) {
 
   ifstream file(file_name.c_str(), ios::in|ios::binary|ios::ate);
   if( file.is_open()) {
@@ -98,7 +99,7 @@ ColorImage::ColorImage(const std::string file_name) {
   }
 }
 
-ColorImage::ColorImage(unsigned int height, unsigned int width, int id)
+Image::ColorImage::ColorImage(unsigned int height, unsigned int width, int id)
   : height(height) {
 
   set_width( width);
@@ -108,7 +109,7 @@ ColorImage::ColorImage(unsigned int height, unsigned int width, int id)
   posix_memalign( (void**)&b, MEMALLIGN, height*_width_*sizeof(float));
 }
 
-ColorImage::ColorImage(ColorImage&& other)
+Image::ColorImage::ColorImage(Image::ColorImage&& other)
   : height( other.height)
   , width( other.width)
   , _width_( other._width_)
@@ -122,7 +123,7 @@ ColorImage::ColorImage(ColorImage&& other)
   other.id = -1;
 }
 
-ColorImage& ColorImage::operator=(ColorImage&& other) {
+Image::ColorImage& Image::ColorImage::operator=(Image::ColorImage&& other) {
 
   if( this != &other) {
 
@@ -149,13 +150,13 @@ ColorImage& ColorImage::operator=(ColorImage&& other) {
   return *this;
 }
 
-ColorImage::ColorImage(const ColorImage& other)
+Image::ColorImage::ColorImage(const Image::ColorImage& other)
   : height( other.height)
   , width( other.width)
   , _width_( other._width_)
   , id( other.id) {
 
-  unsigned int sz = height * _width_;
+    unsigned int sz = height * _width_;
 
   if( other.l != NULL) {
     posix_memalign( (void**)&l, MEMALLIGN, height*_width_*sizeof(float));
@@ -179,7 +180,7 @@ ColorImage::ColorImage(const ColorImage& other)
     b = NULL;
 }
 
-ColorImage& ColorImage::operator=(const ColorImage& other) {
+Image::ColorImage& Image::ColorImage::operator=(const Image::ColorImage& other) {
 
   if( this != &other) {
 
@@ -211,14 +212,13 @@ ColorImage& ColorImage::operator=(const ColorImage& other) {
   return *this;
 }
 
-ColorImage ColorImage::scale_image(float scale_factor) const {
+Image::ColorImage Image::ColorImage::scale_image(float scale_factor) const {
 
 #ifdef _DEBUG
   assert( scale_factor > 0.f);
 #endif
-  ColorImage im( static_cast<unsigned int>( floor(height * scale_factor)),
-                 static_cast<unsigned int>( floor(width * scale_factor)),
-                 id);
+  Image::ColorImage im( static_cast<unsigned int>( floor(height * scale_factor)),
+                       static_cast<unsigned int>( floor(width * scale_factor)), id);
 
   const fp step = 1.0/static_cast<fp>( scale_factor);
 
@@ -269,15 +269,15 @@ ColorImage ColorImage::scale_image(float scale_factor) const {
 }
 
 /* rotate relative to image center */
-ColorImage ColorImage::rotate_image(float angle) const {
+Image::ColorImage Image::ColorImage::rotate_image(float angle) const {
 
-  ColorImage im( height, width, id);
+  Image::ColorImage im( height, width, id);
 
   const fp xc = static_cast<fp>( width/2);
   const fp yc = static_cast<fp>( height/2);
 
-  const fp cos_alpha = cos( AccUtils::D2R * angle);
-  const fp sin_alpha = sin( AccUtils::D2R * angle);
+  const fp cos_alpha = cos( Utils::D2R * angle);
+  const fp sin_alpha = sin( Utils::D2R * angle);
 
   for( unsigned int i=0; i < height; ++i) {
 
@@ -328,7 +328,7 @@ ColorImage ColorImage::rotate_image(float angle) const {
   return im;
 }
 
-ColorImage::~ColorImage() {
+Image::ColorImage::~ColorImage() {
 
   if( l != NULL) {
     free( l);
@@ -341,7 +341,7 @@ ColorImage::~ColorImage() {
   }
 }
 
-void ColorImage::write_image_to_bitmap(const ColorImage& im, const std::string& file_name) {
+void Image::ColorImage::write_image_to_bitmap(const Image::ColorImage& im, const std::string& file_name) {
 
   HeaderStr header;
   const unsigned int bytes_per_pixel = 3;
@@ -449,9 +449,9 @@ void ColorImage::write_image_to_bitmap(const ColorImage& im, const std::string& 
     }
 }
 
-ColorImage ColorImage::gaussian_smoother(const ColorImage& im) {
+Image::ColorImage Image::ColorImage::gaussian_smoother(const Image::ColorImage& im) {
 
-  ColorImage smooth(im.height, im.width, im.id);
+  Image::ColorImage smooth(im.height, im.width, im.id);
 
   static const int filter[5][5] =
   {
@@ -658,7 +658,7 @@ ColorImage ColorImage::gaussian_smoother(const ColorImage& im) {
   return smooth;
 }
 
-fp ColorImage::bc_invariant_correlation( const ColorImage& main /* to be matched*/, const ColorImage& temp /* matcher */,
+fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /* to be matched*/, const Image::ColorImage& temp /* matcher */,
                              unsigned int ym/*height in main image*/, unsigned int xm/*width in main image*/,
                              float scale, float angle) {
 
@@ -677,14 +677,14 @@ fp ColorImage::bc_invariant_correlation( const ColorImage& main /* to be matched
 
   const fp xc = static_cast<fp>( temp.get_width()/2);
   const fp yc = static_cast<fp>( temp.get_height()/2);
-  const fp cos_alpha = cos( AccUtils::D2R * angle);
-  const fp sin_alpha = sin( AccUtils::D2R * angle);
+  const fp cos_alpha = cos( Utils::D2R * angle);
+  const fp sin_alpha = sin( Utils::D2R * angle);
 
   fp y = 0.0;
   for( unsigned int i = 0; i < height; ++i) {
 
     const fp yp = (y - yc) * static_cast<fp>( scale); /* height in template image */
-#if INTERPOLATE_FLAG == 1
+#if INTERPOLATE_CORR_FLAG == 1
     const unsigned int y0 = static_cast< unsigned int>( floor(y));
     const unsigned int y1 = min( y0 + 1, temp.height - 1);
 #endif
@@ -702,7 +702,7 @@ fp ColorImage::bc_invariant_correlation( const ColorImage& main /* to be matched
       if( (ypp >= 0) && (ypp < (main.get_height()-1)) && (xpp >= 0) && (xpp < (main.get_width()-1))) {
 
         /* get value of pixel from template image */
-#if INTERPOLATE_FLAG == 1
+#if INTERPOLATE_CORR_FLAG == 1
         const unsigned int x0 = static_cast< unsigned int>( floor(x));
         const unsigned int x1 = min( x0 + 1, temp.width -1);
         fp f00 = static_cast<fp>( temp.L( y0, x0));
@@ -717,7 +717,7 @@ fp ColorImage::bc_invariant_correlation( const ColorImage& main /* to be matched
 #endif
 
         /* get value of pixel from main image */
-#if INTERPOLATE_FLAG == 1
+#if INTERPOLATE_CORR_FLAG == 1
         const unsigned int _y0 = static_cast< unsigned int>( floor(ypp));
         const unsigned int _y1 = _y0 + 1;
         const unsigned int _x0 = static_cast< unsigned int>( floor(xpp));
@@ -750,7 +750,7 @@ fp ColorImage::bc_invariant_correlation( const ColorImage& main /* to be matched
 }
 
 
-void ColorImage::tag( ColorImage& main, const ColorImage& temp,
+void Image::ColorImage::tag( Image::ColorImage& main, const Image::ColorImage& temp,
                       unsigned int ym, unsigned int xm, float scale, float angle) {
 
 #if _DEBUG == 1
@@ -765,14 +765,14 @@ void ColorImage::tag( ColorImage& main, const ColorImage& temp,
 
   const fp xc = static_cast<fp>( temp.width/2);
   const fp yc = static_cast<fp>( temp.height/2);
-  const fp cos_alpha = cos( AccUtils::D2R * angle);
-  const fp sin_alpha = sin( AccUtils::D2R * angle);
+  const fp cos_alpha = cos( Utils::D2R * angle);
+  const fp sin_alpha = sin( Utils::D2R * angle);
 
   fp y = 0.0;
   for( unsigned int i = 0; i < height; ++i) {
 
     fp yp = (y - yc) * static_cast<fp>( scale); /* height in template image */
-#if INTERPOLATE_FLAG == 1
+#if INTERPOLATE_CORR_FLAG == 1
     const unsigned int y0 = static_cast< unsigned int>( floor(y));
     const unsigned int y1 = min( y0 + 1, temp.height - 1);
 #endif
@@ -790,7 +790,7 @@ void ColorImage::tag( ColorImage& main, const ColorImage& temp,
       if( (ypp >= 0) && (ypp < (main.height-1)) && (xpp >= 0) && (xpp < (main.width-1))) {
         /********************TAG L value****************************************/
         /* get value of pixel from template image */
-#if INTERPOLATE_FLAG == 1
+#if INTERPOLATE_CORR_FLAG == 1
         const unsigned int x0 = static_cast< unsigned int>( floor(x));
         const unsigned int x1 = x0 + 1;
         fp f00 = static_cast<fp>( temp.L( y0, x0));
@@ -806,7 +806,7 @@ void ColorImage::tag( ColorImage& main, const ColorImage& temp,
         main.L( static_cast< unsigned int>( round( ypp)), static_cast< unsigned int>( round( xpp)) ) = t_val;
 
         /********************TAG a value****************************************/
-#if INTERPOLATE_FLAG == 1
+#if INTERPOLATE_CORR_FLAG == 1
         f00 = static_cast<fp>( temp.A( y0, x0));
         f01 = static_cast<fp>( temp.A( y0, x1));
         f10 = static_cast<fp>( temp.A( y1, x0));
@@ -820,7 +820,7 @@ void ColorImage::tag( ColorImage& main, const ColorImage& temp,
         main.A( static_cast< unsigned int>( round( ypp)), static_cast< unsigned int>( round( xpp)) ) = t_val;
 
         /********************TAG b value****************************************/
-#if INTERPOLATE_FLAG == 1
+#if INTERPOLATE_CORR_FLAG == 1
         f00 = static_cast<fp>( temp.B( y0, x0));
         f01 = static_cast<fp>( temp.B( y0, x1));
         f10 = static_cast<fp>( temp.B( y1, x0));
@@ -838,4 +838,6 @@ void ColorImage::tag( ColorImage& main, const ColorImage& temp,
   }
 }
 
-
+bool Image::size_sort( const Image::ColorImage& im1, const Image::ColorImage& im2) {
+  return (im1.get_radius() < im2.get_radius());
+}

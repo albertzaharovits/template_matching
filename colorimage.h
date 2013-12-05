@@ -1,3 +1,6 @@
+#include "settings.h"
+#include "utils.h"
+
 #ifndef COLORIMAGE_H
 #define COLORIMAGE_H
 
@@ -8,150 +11,153 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include "settings.h"
-#include "utils.h"
+namespace Image {
 
-typedef struct __attribute__ ((__packed__)){
-    //BMP header
-    uint16_t magic_number;
-    uint32_t size;
-    uint32_t reserved;
-    uint32_t offset;
-    //DIB header
-    uint32_t dibSize;
-    uint32_t width;
-    uint32_t height;
-    uint16_t plane;
-    uint16_t bit_per_pixel;
-    uint32_t compression;
-    uint32_t data_size;
-    uint32_t hor_res;
-    uint32_t vert_res;
-    uint32_t color_number;
-    uint32_t important;
-}HeaderStr;
+  typedef struct __attribute__ ((__packed__)){
+      //BMP header
+      uint16_t magic_number;
+      uint32_t size;
+      uint32_t reserved;
+      uint32_t offset;
+      //DIB header
+      uint32_t dibSize;
+      uint32_t width;
+      uint32_t height;
+      uint16_t plane;
+      uint16_t bit_per_pixel;
+      uint32_t compression;
+      uint32_t data_size;
+      uint32_t hor_res;
+      uint32_t vert_res;
+      uint32_t color_number;
+      uint32_t important;
+  }HeaderStr;
 
-class ColorImage
-{
-  unsigned int height;
-  unsigned int width;
-  /* actual width, so that rows start alligned */
-  unsigned int _width_;
-  int id;
+  class ColorImage
+  {
+    unsigned int height;
+    unsigned int width;
+    /* actual width, so that rows start alligned */
+    unsigned int _width_;
+    int id;
 
-  float* l;
-  float* a;
-  float* b;
-public:
-  ColorImage(const std::string file_name);
-  ColorImage(unsigned int height, unsigned int width, int id);
-  ColorImage(ColorImage&& other);
-  ColorImage& operator=(ColorImage&& other);
-  ColorImage(const ColorImage& other);
-  ColorImage& operator=(const ColorImage& other);
-  ColorImage scale_image(float scale_factor) const;
-  ColorImage rotate_image(float angle) const;
-  ~ColorImage();
+    float* l;
+    float* a;
+    float* b;
+  public:
+    ColorImage(const std::string file_name);
+    ColorImage(unsigned int height, unsigned int width, int id);
+    ColorImage(ColorImage&& other);
+    ColorImage& operator=(ColorImage&& other);
+    ColorImage(const ColorImage& other);
+    ColorImage& operator=(const ColorImage& other);
+    ColorImage scale_image(float scale_factor) const;
+    ColorImage rotate_image(float angle) const;
+    ~ColorImage();
 
-  float& L(unsigned int i, unsigned int j);
-  float L(unsigned int i, unsigned int j) const;
-  float& A(unsigned int i, unsigned int j);
-  float A(unsigned int i, unsigned int j) const;
-  float& B(unsigned int i, unsigned int j);
-  float B(unsigned int i, unsigned int j) const;
+    float& L(unsigned int i, unsigned int j);
+    float L(unsigned int i, unsigned int j) const;
+    float& A(unsigned int i, unsigned int j);
+    float A(unsigned int i, unsigned int j) const;
+    float& B(unsigned int i, unsigned int j);
+    float B(unsigned int i, unsigned int j) const;
 
-  void set_width(unsigned int width);
-  unsigned int get_width() const;
-  void set_height(unsigned int height);
-  unsigned int get_height() const;
-  void set_id(unsigned int id);
-  unsigned int get_id() const;
-  unsigned int get_radius() const;
+    void set_width(unsigned int width);
+    unsigned int get_width() const;
+    void set_height(unsigned int height);
+    unsigned int get_height() const;
+    void set_id(unsigned int id);
+    unsigned int get_id() const;
+    unsigned int get_radius() const;
 
-  static void write_image_to_bitmap(const ColorImage& im, const std::string& file_name);
-  static ColorImage gaussian_smoother(const ColorImage& im);
+    static void write_image_to_bitmap(const ColorImage& im, const std::string& file_name);
+    static ColorImage gaussian_smoother(const ColorImage& im);
 
 
-  /* debug auxiliary function
-   * places the temp image (scaled and rotated), over the main image
-   */
-  static void tag( ColorImage& main /* to be tagged */, const ColorImage& temp /* tag */,
-                   unsigned int y /* height in main image */, unsigned int x /* width int main image */,
-                   float scale, float angle);
+    /* debug auxiliary function
+     * places the temp image (scaled and rotated), over the main image
+     */
+    static void tag( ColorImage& main /* to be tagged */, const ColorImage& temp /* tag */,
+                     unsigned int y /* height in main image */, unsigned int x /* width int main image */,
+                     float scale, float angle);
 
-  /* last stage filter
-   * brute force filter, uses scale and angle information to compute correlation
-   */
-  static fp bc_invariant_correlation( const ColorImage& main /* to be matched */,
-                                      const ColorImage& temp /* matcher */,
-                                      unsigned int y /* height in main image */, unsigned int x /* width in main image */,
-                                      float scale, float angle);
-};
+    /* last stage filter
+     * brute force filter, uses scale and angle information to compute correlation
+     */
+    static fp bc_invariant_correlation( const ColorImage& main /* to be matched */,
+                                        const ColorImage& temp /* matcher */,
+                                        unsigned int y /* height in main image */, unsigned int x /* width in main image */,
+                                        float scale, float angle);
+  };
+
+  bool size_sort( const ColorImage& im1, const ColorImage& im2);
+
+} //namespace
 
 inline
-float& ColorImage::L(unsigned int i, unsigned int j) {
+float& Image::ColorImage::L(unsigned int i, unsigned int j) {
   return l[i*_width_+j];
 }
 
 inline
-float ColorImage::L(unsigned int i, unsigned int j) const {
+float Image::ColorImage::L(unsigned int i, unsigned int j) const {
   return l[i*_width_+j];
 }
 
 inline
-float& ColorImage::A(unsigned int i, unsigned int j) {
+float& Image::ColorImage::A(unsigned int i, unsigned int j) {
   return a[i*_width_+j];
 }
 
 inline
-float ColorImage::A(unsigned int i, unsigned int j) const {
+float Image::ColorImage::A(unsigned int i, unsigned int j) const {
   return a[i*_width_+j];
 }
 
 inline
-float& ColorImage::B(unsigned int i, unsigned int j) {
+float& Image::ColorImage::B(unsigned int i, unsigned int j) {
   return b[i*_width_+j];
 }
 
 inline
-float ColorImage::B(unsigned int i, unsigned int j) const {
+float Image::ColorImage::B(unsigned int i, unsigned int j) const {
   return b[i*_width_+j];
 }
 
 inline
-void ColorImage::set_width(unsigned int width) {
+void Image::ColorImage::set_width(unsigned int width) {
   this->width = width;
   /* alligned width */
   this->_width_ = (((width*sizeof(float) + (MEMALLIGN-1))/MEMALLIGN)*MEMALLIGN)/sizeof(float);
 }
 
 inline
-unsigned int ColorImage::get_width() const {
+unsigned int Image::ColorImage::get_width() const {
   return this->width;
 }
 
 inline
-void ColorImage::set_height(unsigned int height) {
+void Image::ColorImage::set_height(unsigned int height) {
   this->height = height;
 }
 
 inline
-unsigned int ColorImage::get_height() const {
+unsigned int Image::ColorImage::get_height() const {
   return this->height;
 }
 
 inline
-void ColorImage::set_id(unsigned int id) {
+void Image::ColorImage::set_id(unsigned int id) {
   this->id = id;
 }
 
 inline
-unsigned int ColorImage::get_id() const {
+unsigned int Image::ColorImage::get_id() const {
   return this->id;
 }
 
 inline
-unsigned int ColorImage::get_radius() const {
+unsigned int Image::ColorImage::get_radius() const {
   return ((width < height ? height : width) - 1)/2;
 }
 

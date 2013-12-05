@@ -4,7 +4,8 @@ CONFIG -= app_bundle
 CONFIG -= qt
 
 SOURCES += main.cpp \
-    colorimage.cpp
+    colorimage.cpp \
+    utils.cpp
 
 QMAKE_CXXFLAGS += -std=c++0x
 
@@ -35,4 +36,5 @@ QMAKE_CXXFLAGS += -std=c++0x
 HEADERS += \
     settings.h \
     colorimage.h \
-    utils.h
+    utils.h \
+    ControlDict.h
