@@ -5,7 +5,7 @@ CONFIG -= qt
 
 SOURCES += main.cpp \
     colorimage.cpp \
-    utils.cpp
+    sampling.cpp
 
 QMAKE_CXXFLAGS += -std=c++0x
 
@@ -37,4 +37,5 @@ HEADERS += \
     settings.h \
     colorimage.h \
     utils.h \
-    ControlDict.h
+    ControlDict.h \
+    sampling.h

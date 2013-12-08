@@ -1,3 +1,4 @@
+#include "utils.h"
 #include "colorimage.h"
 
 using namespace std;
@@ -838,6 +839,160 @@ void Image::ColorImage::tag( Image::ColorImage& main, const Image::ColorImage& t
   }
 }
 
-bool Image::size_sort( const Image::ColorImage& im1, const Image::ColorImage& im2) {
-  return (im1.get_radius() < im2.get_radius());
+void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int r,
+                             const Image::ColorImage& im, fp& _l, fp& _a, fp& _b) {
+
+  unsigned int count = 0;
+  _l = _a = _b = 0.0;
+  float p;
+  unsigned int x, y;
+
+  /* return 0 if no complete circle fits the image */
+  if( (xc < r) || ((xc+r) >= im.get_width()) || (yc < r) || ((yc+r) >= im.get_height()) )
+    return;
+
+  if( r == 0) {
+    count = 1;
+    _l = static_cast<fp>( im.L(yc, xc));
+    _a = static_cast<fp>( im.A(yc, xc));
+    _b = static_cast<fp>( im.B(yc, xc));
+  }
+  else {
+    x = 0;
+    y = r;
+    /* cross-tip points */
+    _l = static_cast<fp>( im.L( r+yc, xc) + im.L( -r+yc, xc) + im.L( yc, r+xc) + im.L( yc, -r+xc) );
+    _a = static_cast<fp>( im.A( r+yc, xc) + im.A( -r+yc, xc) + im.A( yc, r+xc) + im.A( yc, -r+xc) );
+    _b = static_cast<fp>( im.B( r+yc, xc) + im.B( -r+yc, xc) + im.B( yc, r+xc) + im.B( yc, -r+xc) );
+    count = 4;
+
+    p = 1.25f - static_cast<float>( r);
+
+    while(1) {
+
+      p = p + 2.f*static_cast<float>(++x) + 1.f;
+      if( p > 0.f)
+        p -= 2.f*static_cast<float>(--y);
+
+      if( x >= y) {
+        if( x == y) {
+          _l += static_cast<fp>( im.L(-y+yc,-x+xc) + im.L(-y+yc, x+xc) +
+                                 im.L( y+yc, x+xc) + im.L( y+yc,-x+xc));
+          _a += static_cast<fp>( im.A(-y+yc,-x+xc) + im.A(-y+yc, x+xc) +
+                                 im.A( y+yc, x+xc) + im.A( y+yc,-x+xc));
+          _b += static_cast<fp>( im.B(-y+yc,-x+xc) + im.B(-y+yc, x+xc) +
+                                 im.B( y+yc, x+xc) + im.B( y+yc,-x+xc));
+          count += 4;
+        }
+        break;
+      }
+
+      /*symmetry points in the other seven octants*/
+      _l += static_cast<fp>( im.L( y+yc, x+xc) + im.L( x+yc, y+xc) + im.L(-x+yc, y+xc) + im.L(-y+yc, x+xc) +
+                             im.L(-y+yc,-x+xc) + im.L(-x+yc,-y+xc) + im.L( x+yc,-y+xc) + im.L( y+yc,-x+xc) );
+      _a += static_cast<fp>( im.A( y+yc, x+xc) + im.A( x+yc, y+xc) + im.A(-x+yc, y+xc) + im.A(-y+yc, x+xc) +
+                             im.A(-y+yc,-x+xc) + im.A(-x+yc,-y+xc) + im.A( x+yc,-y+xc) + im.A( y+yc,-x+xc) );
+      _b += static_cast<fp>( im.B( y+yc, x+xc) + im.B( x+yc, y+xc) + im.B(-x+yc, y+xc) + im.B(-y+yc, x+xc) +
+                             im.B(-y+yc,-x+xc) + im.B(-x+yc,-y+xc) + im.B( x+yc,-y+xc) + im.B( y+yc,-x+xc) );
+      count += 8;
+    }
+  }
+
+  _l = _l/count;
+  _a = _a/count;
+  _b = _b/count;
+}
+
+void Image::circle_pix_mean2( unsigned int yc, unsigned int xc, unsigned int dx,
+                              unsigned int r,
+                              const Image::ColorImage& im, fp* _l, fp* _a, fp* _b) {
+
+  unsigned int count = 0;
+  float p;
+  unsigned int x, y;
+
+  if( r == 0) {
+    count = 1;
+    _l[0:dx] = (im.l + yc*im._width_)[xc:dx];
+    _a[0:dx] = (im.a + yc*im._width_)[xc:dx];
+    _b[0:dx] = (im.b + yc*im._width_)[xc:dx];
+  }
+  else {
+    x = 0;
+    y = r;
+    /* cross-tip points */
+    _l[0:dx] = (im.l + (r+yc)*im._width_)[xc:dx] + (im.l + (-r+yc)*im._width_)[xc:dx]
+               + (im.l + yc*im._width_)[xc+r:dx] + (im.l + yc*im._width_)[xc-r:dx];
+    _a[0:dx] = (im.a + (r+yc)*im._width_)[xc:dx] + (im.a + (-r+yc)*im._width_)[xc:dx]
+               + (im.a + yc*im._width_)[xc+r:dx] + (im.a + yc*im._width_)[xc-r:dx];
+    _b[0:dx] = (im.b + (r+yc)*im._width_)[xc:dx] + (im.b + (-r+yc)*im._width_)[xc:dx]
+               + (im.b + yc*im._width_)[xc+r:dx] + (im.b + yc*im._width_)[xc-r:dx];
+    count = 4;
+
+    p = 1.25f - static_cast<float>( r);
+
+    while(1) {
+
+      p = p + 2.f*static_cast<float>(++x) + 1.f;
+      if( p > 0.f)
+        p -= 2.f*static_cast<float>(--y);
+
+      if( x >= y) {
+        if( x == y) {
+          _l[0:dx] += (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
+                     + (im.l + (yc+y)*im._width_)[xc+x:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
+          _a[0:dx] += (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
+                     + (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
+          _b[0:dx] += (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
+                     + (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+y)*im._width_)[xc-x:dx];
+          count += 4;
+        }
+        break;
+      }
+
+      /*symmetry points in the other seven octants*/
+      _l[0:dx] += (im.l + (yc+y)*im._width_)[xc+x:dx] + (im.l + (yc+x)*im._width_)[xc+y:dx]
+                  + (im.l + (yc-x)*im._width_)[xc+y:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
+                  + (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-x)*im._width_)[xc-y:dx]
+                  + (im.l + (yc+x)*im._width_)[xc-y:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
+      _a[0:dx] += (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+x)*im._width_)[xc+y:dx]
+                  + (im.a + (yc-x)*im._width_)[xc+y:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
+                  + (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-x)*im._width_)[xc-y:dx]
+                  + (im.a + (yc+x)*im._width_)[xc-y:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
+      _b[0:dx] += (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+x)*im._width_)[xc+y:dx]
+                  + (im.b + (yc-x)*im._width_)[xc+y:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
+                  + (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-x)*im._width_)[xc-y:dx]
+                  + (im.b + (yc+x)*im._width_)[xc-y:dx] + (im.b + (yc+y)*im._width_)[xc-x:dx];
+      count += 8;
+    }
+  }
+
+  _l[0:dx] /= count;
+  _a[0:dx] /= count;
+  _b[0:dx] /= count;
+}
+
+Sampling::CircularSamplingData Image::circle_sampling( const Image::ColorImage& im,
+                                                       uint circle_start, uint circle_step_delta) {
+
+  uint radius = im.get_radius();
+  uint count = (radius-circle_start)/circle_step_delta + 1;
+  Sampling::CircularSamplingData sdata( circle_start, circle_step_delta, count);
+
+  uint r = circle_start;
+  fp l, a, b;
+
+  unsigned int yc = im.get_height()/2;
+  unsigned int xc = im.get_width()/2;
+
+  for(uint i=0;i<count;i++) {
+
+    Image::circle_pix_mean( yc, xc, r, im, l, a, b);
+    sdata.cis_l[i] = l; sdata.cis_l_S += l; sdata.cis_l_S2 += l*l;
+    sdata.cis_a[i] = a; sdata.cis_a_S += a; sdata.cis_a_S2 += a*a;
+    sdata.cis_b[i] = b; sdata.cis_b_S += b; sdata.cis_b_S2 += b*b;
+    r += circle_step_delta;
+  }
+
+  return sdata;
 }

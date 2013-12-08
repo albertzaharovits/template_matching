@@ -1,8 +1,8 @@
-#include "settings.h"
-#include "utils.h"
-
 #ifndef COLORIMAGE_H
 #define COLORIMAGE_H
+
+#include "settings.h"
+#include "sampling.h"
 
 #include <string>
 #include <algorithm>
@@ -33,8 +33,8 @@ namespace Image {
       uint32_t important;
   }HeaderStr;
 
-  class ColorImage
-  {
+  class ColorImage {
+
     unsigned int height;
     unsigned int width;
     /* actual width, so that rows start alligned */
@@ -88,10 +88,22 @@ namespace Image {
                                         const ColorImage& temp /* matcher */,
                                         unsigned int y /* height in main image */, unsigned int x /* width in main image */,
                                         float scale, float angle);
+
+    bool operator<(const ColorImage& other) const;
+    friend void circle_pix_mean2( unsigned int yc, unsigned int xc, unsigned int dx,
+                                  unsigned int r,
+                                  const Image::ColorImage& im, fp* _l, fp* _a, fp* _b);
   };
 
-  bool size_sort( const ColorImage& im1, const ColorImage& im2);
+  void circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int r,
+                        const Image::ColorImage& im, fp& _l, fp& _a, fp& _b);
+  void circle_pix_mean2( unsigned int yc, unsigned int xc, unsigned int dx,
+                         unsigned int r,
+                         const Image::ColorImage& im, fp* _l, fp* _a, fp* _b);
 
+
+  Sampling::CircularSamplingData circle_sampling( const Image::ColorImage& im,
+                                        uint circle_start, uint circle_step_delta);
 } //namespace
 
 inline
@@ -158,7 +170,12 @@ unsigned int Image::ColorImage::get_id() const {
 
 inline
 unsigned int Image::ColorImage::get_radius() const {
-  return ((width < height ? height : width) - 1)/2;
+  return ((width < height ? width : height) - 1)/2;
+}
+
+inline
+bool Image::ColorImage::operator<(const Image::ColorImage& other) const {
+  return get_radius() < other.get_radius();
 }
 
 #endif // COLORIMAGE_H

@@ -1,7 +1,7 @@
-    #ifndef SETTINGS_H
+#ifndef SETTINGS_H
 #define SETTINGS_H
 
-typedef double fp;
+typedef float fp;
 typedef unsigned int uint;
 #define MEMALLIGN 64
 
