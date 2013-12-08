@@ -7,6 +7,8 @@ namespace Sampling {
   class CircularSamplingData {
       public:
         uint id;
+        float scale;
+
         uint cis_start;
         uint cis_step;
         uint cis_n;
@@ -21,7 +23,7 @@ namespace Sampling {
         float cis_b_S;
         float cis_b_S2;
 
-        CircularSamplingData( uint cis_start, uint cis_step, uint cis_n);
+        CircularSamplingData( uint cis_start, uint cis_step, uint cis_n, uint id=0, float scale=-33.f);
         ~CircularSamplingData();
         CircularSamplingData(CircularSamplingData&& other);
         CircularSamplingData& operator=(CircularSamplingData&& other);

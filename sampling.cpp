@@ -2,8 +2,9 @@
 #include <algorithm>
 #include <stdlib.h>
 
-Sampling::CircularSamplingData::CircularSamplingData(uint circle_start, uint circle_step_delta, uint cis_n)
-  : cis_start(circle_start)
+Sampling::CircularSamplingData::CircularSamplingData(uint circle_start, uint circle_step_delta, uint cis_n, uint id, float scale)
+  : id(id), scale(scale)
+  , cis_start(circle_start)
   , cis_step(circle_step_delta)
   , cis_n(cis_n) {
 
@@ -14,9 +15,6 @@ Sampling::CircularSamplingData::CircularSamplingData(uint circle_start, uint cir
 }
 
 Sampling::CircularSamplingData::~CircularSamplingData() {
-  this->cis_start = 0;
-  this->cis_step = 0;
-  this->cis_n = 0;
   if(this->cis_l) {
     free(this->cis_l);
     this->cis_l = NULL;
@@ -32,7 +30,7 @@ Sampling::CircularSamplingData::~CircularSamplingData() {
 }
 
 Sampling::CircularSamplingData::CircularSamplingData(Sampling::CircularSamplingData&& other)
-  : id(other.id)
+  : id(other.id), scale(other.scale)
   , cis_start(other.cis_start)
   , cis_step(other.cis_step)
   , cis_n(other.cis_n)
@@ -48,7 +46,7 @@ Sampling::CircularSamplingData::CircularSamplingData(Sampling::CircularSamplingD
 }
 
 Sampling::CircularSamplingData::CircularSamplingData(const Sampling::CircularSamplingData& other)
-  : id(other.id)
+  : id(other.id), scale(other.scale)
   , cis_start(other.cis_start)
   , cis_step(other.cis_step)
   , cis_n(other.cis_n) {
@@ -94,6 +92,7 @@ Sampling::CircularSamplingData& Sampling::CircularSamplingData::operator=(Sampli
       posix_memalign( (void**)&cis_b, MEMALLIGN, cis_n*sizeof(float));
     }
     id = other.id;
+    scale = other.scale;
     cis_start = other.cis_start;
     cis_step = other.cis_step;
     std::copy( other.cis_l, other.cis_l+other.cis_n, cis_l);

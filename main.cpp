@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
   }
 
 #if SHOW_FILTERS == 1
-  std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/, unsigned int /*id*/, float/*scale*/> > first_grade_pixels;
+  std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > first_grade_pixels;
 #endif
 
   vector< Image::ColorImage> templates;
@@ -81,26 +81,25 @@ int main(int argc, char* argv[]) {
   const float scaling_end = scaling_start + (scaling_step_count - 1u) * scaling_step_delta;
 
   /* circular sampling data */
-  Utils::Array2d<Sampling::CircularSamplingData> template_cis(parameters.template_names.size(), scaling_step_count);
-  /* sampling unscaled templates */
-  i = 0;
+  std::vector< Sampling::CircularSamplingData > template_cis;
+  template_cis.reserve( parameters.template_names.size() * scaling_step_count);
+  /* sampling templates */
   for(const Image::ColorImage& temp : templates) {
 
-    template_cis( i, 0) = Image::circle_sampling( temp, circle_start, circle_step_delta);
-    i++;
-  }
-  /* sampling scaled templates */
-  i = 0;
-  for(const Image::ColorImage& temp : templates) {
-
-    j = 1;
+    Sampling::CircularSamplingData cs = Image::circle_sampling( temp, circle_start, circle_step_delta);
+    cs.id = temp.get_id();
+    cs.scale = scaling_start;
+    template_cis.push_back( std::move(cs));
     for( float s = scaling_start + scaling_step_delta; s <= scaling_end; s+= scaling_step_delta) {
       Image::ColorImage scaled = temp.scale_image(s);
-      template_cis( i, j) = Image::circle_sampling( scaled, circle_start, circle_step_delta);
-      j++;
+      cs = Image::circle_sampling( scaled, circle_start, circle_step_delta);
+      cs.id = temp.get_id();
+      cs.scale = s;
+      template_cis.push_back( std::move(cs));
     }
-    i++;
   }
+
+  std::sort( template_cis.begin(), template_cis.end());
 
   Image::ColorImage main_image( parameters.main_image_name);
   unsigned int min_radius = templates[0].get_radius();
@@ -125,8 +124,7 @@ int main(int argc, char* argv[]) {
     fp* cis_corr;
     posix_memalign( (void**)&cis_corr, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
 
-    unsigned int max_radius = templates[parameters.template_names.size()-1].get_radius()
-          * parameters.max_scale;
+    unsigned int max_radius = std::floor( templates[parameters.template_names.size()-1].get_radius() * parameters.max_scale);
     uint count = (max_radius-circle_start)/circle_step_delta + 1;
     Utils::Array2d<fp> main_l( highj-lowj+1, count);
     Utils::Array2d<fp> main_a( highj-lowj+1, count);
@@ -135,13 +133,15 @@ int main(int argc, char* argv[]) {
     posix_memalign( (void**)&aux, MEMALLIGN, count*sizeof(fp));
 
     for(i=lowi; i < highi; i++) {
-      unsigned int k = 0;
-      for(unsigned int r=circle_start; r <= min_radius; r+=circle_step_delta) {
+      unsigned int k;
+      const Sampling::CircularSamplingData& temp_cis = template_cis[0];
+      unsigned int r = circle_start;
+      for( k=0; k < temp_cis.cis_n; k++) {
         Image::circle_pix_mean2( i, lowj, highj-lowj, r, main_image, buff_l, buff_a, buff_b);
         main_l.scatter(k,buff_l,0);
         main_a.scatter(k,buff_a,0);
         main_b.scatter(k,buff_b,0);
-        k++;
+        r += circle_step_delta;
       }
 
       for(j=0;j<(highj-lowj+1);j++) {
@@ -158,12 +158,12 @@ int main(int argc, char* argv[]) {
       }
 
       for(j=0;j<(highj-lowj+1);j++) {
-        fp S_mt = __sec_reduce_add( main_l.get_row(j)[0:k] * template_cis(0,0).cis_l[0:k]);
-        fp S_l = (S_mt - buff_l_S[j]*template_cis(0,0).cis_l_S/k)
-                / sqrt( (template_cis(0,0).cis_l_S2 - pow( template_cis(0,0).cis_l_S, 2)/k)
+        fp S_mt = __sec_reduce_add( main_l.get_row(j)[0:k] * temp_cis.cis_l[0:k]);
+        fp S_l = (S_mt - buff_l_S[j]*temp_cis.cis_l_S/k)
+                / sqrt( (temp_cis.cis_l_S2 - pow( temp_cis.cis_l_S, 2)/k)
                         * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
-        aux[0:k] = (pow( main_a.get_row(j)[0:k] - template_cis(0,0).cis_a[0:k], 2)
-                    + pow( main_b.get_row(j)[0:k] - template_cis(0,0).cis_b[0:k], 2));
+        aux[0:k] = (pow( main_a.get_row(j)[0:k] - temp_cis.cis_a[0:k], 2)
+                    + pow( main_b.get_row(j)[0:k] - temp_cis.cis_b[0:k], 2));
         fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
         S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
         cis_corr[j] = pow(S_l, _alpha_) * pow(S_c, _beta_);
@@ -172,7 +172,7 @@ int main(int argc, char* argv[]) {
 #if SHOW_FILTERS == 1
       for(j=0;j<(highj-lowj+1);j++) {
         if( cis_corr[j] > th1)
-           first_grade_pixels.push_back( std::make_tuple( i, j+lowj, 0, 1.f));
+           first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
       }
 #endif
 
@@ -208,7 +208,7 @@ int main(int argc, char* argv[]) {
 
 #if SHOW_FILTERS == 1
   Image::ColorImage mask_image1( main_image);
-  for( std::vector< std::tuple< unsigned int, unsigned int, unsigned int, float> >::iterator it = first_grade_pixels.begin();
+  for( std::vector< std::tuple< unsigned int, unsigned int> >::iterator it = first_grade_pixels.begin();
        it != first_grade_pixels.end(); ++it) {
     mask_image1.L(std::get<0>(*it), std::get<1>(*it)) = LMAGENTA;
     mask_image1.A(std::get<0>(*it), std::get<1>(*it)) = AMAGENTA;
