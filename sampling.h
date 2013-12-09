@@ -18,10 +18,6 @@ namespace Sampling {
 
         float cis_l_S;
         float cis_l_S2;
-        float cis_a_S;
-        float cis_a_S2;
-        float cis_b_S;
-        float cis_b_S2;
 
         CircularSamplingData( uint cis_start, uint cis_step, uint cis_n, uint id=0, float scale=-33.f);
         ~CircularSamplingData();

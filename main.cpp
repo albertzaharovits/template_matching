@@ -64,6 +64,10 @@ int main(int argc, char* argv[]) {
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > first_grade_pixels;
 #endif
 
+#if _DEBUG == 1
+  try {
+#endif
+
   vector< Image::ColorImage> templates;
   /* iterates over the pattern images */
   for(const string& template_name : parameters.template_names) {
@@ -90,7 +94,7 @@ int main(int argc, char* argv[]) {
     cs.id = temp.get_id();
     cs.scale = scaling_start;
     template_cis.push_back( std::move(cs));
-    for( float s = scaling_start + scaling_step_delta; s <= scaling_end; s+= scaling_step_delta) {
+    for( float s = scaling_start + scaling_step_delta; s <= scaling_end + 0.0003f; s+= scaling_step_delta) {
       Image::ColorImage scaled = temp.scale_image(s);
       cs = Image::circle_sampling( scaled, circle_start, circle_step_delta);
       cs.id = temp.get_id();
@@ -110,25 +114,21 @@ int main(int argc, char* argv[]) {
 
   { // forces destructors free memory
     fp* buff_l, *buff_a, *buff_b;
-    posix_memalign( (void**)&buff_l, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    posix_memalign( (void**)&buff_a, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    posix_memalign( (void**)&buff_b, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    fp* buff_l_S, *buff_a_S, *buff_b_S;
-    posix_memalign( (void**)&buff_l_S, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    posix_memalign( (void**)&buff_a_S, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    posix_memalign( (void**)&buff_b_S, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    fp* buff_l_S2, *buff_a_S2, *buff_b_S2;
-    posix_memalign( (void**)&buff_l_S2, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    posix_memalign( (void**)&buff_a_S2, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
-    posix_memalign( (void**)&buff_b_S2, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
+    posix_memalign( (void**)&buff_l, MEMALLIGN, (highj-lowj)*sizeof(fp));
+    posix_memalign( (void**)&buff_a, MEMALLIGN, (highj-lowj)*sizeof(fp));
+    posix_memalign( (void**)&buff_b, MEMALLIGN, (highj-lowj)*sizeof(fp));
+    fp* buff_l_S;
+    posix_memalign( (void**)&buff_l_S, MEMALLIGN, (highj-lowj)*sizeof(fp));
+    fp* buff_l_S2;
+    posix_memalign( (void**)&buff_l_S2, MEMALLIGN, (highj-lowj)*sizeof(fp));
     fp* cis_corr;
-    posix_memalign( (void**)&cis_corr, MEMALLIGN, (highj-lowj+1)*sizeof(fp));
+    posix_memalign( (void**)&cis_corr, MEMALLIGN, (highj-lowj)*sizeof(fp));
 
-    unsigned int max_radius = std::floor( templates[parameters.template_names.size()-1].get_radius() * parameters.max_scale);
+    unsigned int max_radius = std::ceil( templates[parameters.template_names.size()-1].get_radius() * parameters.max_scale);
     uint count = (max_radius-circle_start)/circle_step_delta + 1;
-    Utils::Array2d<fp> main_l( highj-lowj+1, count);
-    Utils::Array2d<fp> main_a( highj-lowj+1, count);
-    Utils::Array2d<fp> main_b( highj-lowj+1, count);
+    Utils::Array2d<fp> main_l( highj-lowj, count);
+    Utils::Array2d<fp> main_a( highj-lowj, count);
+    Utils::Array2d<fp> main_b( highj-lowj, count);
     fp* aux;
     posix_memalign( (void**)&aux, MEMALLIGN, count*sizeof(fp));
 
@@ -146,14 +146,6 @@ int main(int argc, char* argv[]) {
       for(j=0;j<(highj-lowj);j++) {
         buff_l_S[j] = main_l.reduce_row(j);
         buff_l_S2[j] = main_l.reduce_row2(j);
-      }
-      for(j=0;j<(highj-lowj);j++) {
-        buff_a_S[j] = main_a.reduce_row(j);
-        buff_a_S2[j] = main_a.reduce_row2(j);
-      }
-      for(j=0;j<(highj-lowj);j++) {
-        buff_b_S[j] = main_b.reduce_row(j);
-        buff_b_S2[j] = main_b.reduce_row2(j);
       }
 
       for(j=0;j<(highj-lowj);j++) {
@@ -175,48 +167,51 @@ int main(int argc, char* argv[]) {
       }
 #endif
 
-//      for( unsigned int temp_id = 1; temp_id < template_cis.size(); temp_id++) {
-//        const Sampling::CircularSamplingData& temp_cis = template_cis[temp_id];
-//
-//        unsigned int off = circle_step_delta * (template_cis[temp_id-1].cis_n - template_cis[temp_id].cis_n);
-//        unsigned int r2 = r1 + off;
-//
-//        for( ; k < template_cis[temp_id].cis_n; k++) {
-//          Image::circle_pix_mean( i, lowj-off, highj-lowj-2*off, r1, main_image, buff_l, buff_a, buff_b);
-//          main_l.scatter(k, buff_l, off);
-//          buff_l_S[off:(highj-lowj-2*off+1)] += buff_l[0:(highj-lowj-2*off+1)];
-//          main_a.scatter(k, buff_a, off);
-//          main_b.scatter(k, buff_b, off);
-//          r1 += circle_step_delta;
-//        }
-//      }
-//
-//      unsigned int off = circle_step_delta;
-//      for(unsigned int r=(min_radius+circle_step_delta); r <= std::min(i, max_radius); r+=circle_step_delta) {
-//        Image::circle_pix_mean( i, lowj+off, highj-lowj-2*off, r, main_image, buff_l, buff_a, buff_b);
-//        main_l.scatter(k,buff_l,off);
-//        for(j=off;j<(highj-lowj-2*off+1);j++) {
-//          buff_l_S[j] += buff_l[j-off];
-//          buff_l_S2[j] += buff_l[j-off]*buff_l[j-off];
-//        }
-//        main_a.scatter(k,buff_a,off);
-//        for(j=off;j<(highj-lowj-2*off+1);j++) {
-//          buff_a_S[j] += buff_a[j-off];
-//          buff_a_S2[j] += buff_a[j-off]*buff_a[j-off];
-//        }
-//        main_b.scatter(k,buff_b,off);
-//        for(j=off;j<(highj-lowj-2*off+1);j++) {
-//          buff_b_S[j] += buff_b[j-off];
-//          buff_b_S2[j] += buff_b[j-off]*buff_a[j-off];
-//        }
-//        k++;
-//      }
+      for( unsigned int temp_id = 1; temp_id < template_cis.size(); temp_id++) {
+
+        unsigned int off = circle_step_delta * (template_cis[temp_id].cis_n - template_cis[0].cis_n);
+
+        if((off+lowi)>i || (i+off)>=highi)
+          break;
+
+        for( ; k < template_cis[temp_id].cis_n; k++) {
+
+          Image::circle_pix_mean( i, lowj+off, highj-lowj-2*off, r1, main_image, buff_l, buff_a, buff_b);
+          main_l.scatter(k, buff_l, off);
+          buff_l_S[off:(highj-lowj-2*off)] += buff_l[0:(highj-lowj-2*off)];
+          buff_l_S2[off:(highj-lowj-2*off)] += pow( buff_l[0:(highj-lowj-2*off)], 2);
+          main_a.scatter(k, buff_a, off);
+          main_b.scatter(k, buff_b, off);
+          r1 += circle_step_delta;
+        }
+
+        for(j=off;j<(highj-lowj-off);j++) {
+          fp S_mt = __sec_reduce_add( main_l.get_row(j)[0:k] * template_cis[temp_id].cis_l[0:k]);
+          fp S_l = (S_mt - buff_l_S[j]*template_cis[temp_id].cis_l_S/k)
+                  / sqrt( (template_cis[temp_id].cis_l_S2 - pow( template_cis[temp_id].cis_l_S, 2)/k)
+                          * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
+          aux[0:k] = (pow( main_a.get_row(j)[0:k] - template_cis[temp_id].cis_a[0:k], 2)
+                      + pow( main_b.get_row(j)[0:k] - template_cis[temp_id].cis_b[0:k], 2));
+          fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
+          S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
+          cis_corr[j] = pow(S_l, _alpha_) * pow(S_c, _beta_);
+        }
+
+#if SHOW_FILTERS == 1
+        for(j=off;j<(highj-lowj-off);j++) {
+          if( cis_corr[j] > th1) {
+             first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
+             std::cout << "added " << i << " " << j << ";";
+          }
+        }
+#endif
+      } // template_cis
 
     }
 
     free(buff_l); free(buff_a); free(buff_b);
-    free(buff_l_S); free(buff_a_S); free(buff_b_S);
-    free(buff_l_S2); free(buff_a_S2); free(buff_b_S2);
+    free(buff_l_S);
+    free(buff_l_S2);
     free(cis_corr);
     free(aux);
   }
@@ -231,6 +226,13 @@ int main(int argc, char* argv[]) {
   }
 
   Image::ColorImage::write_image_to_bitmap( mask_image1, "m1_.bmp");
+#endif
+
+#if _DEBUG == 1
+  }
+  catch (int e) {
+    std::cout<< "An exception occurred. Exception Nr. " << e << '\n';
+  }
 #endif
 
   return 0;

@@ -184,14 +184,14 @@ Utils::Array2d<T>& Utils::Array2d<T>::add_2( const Utils::Array2d<T>& other) {
 template< typename T>
 void Utils::Array2d<T>::scatter( unsigned int column, const T* arr, unsigned int offset) {
   for( unsigned int i=offset; i < (height-offset); i++) {
-    data[i*_width_ + column] = arr[i];
+    data[i*_width_ + column] = arr[i-offset];
   }
 }
 
 template< typename T>
 void Utils::Array2d<T>::gather( unsigned int column, T* arr, unsigned int offset) const {
   for( unsigned int i=offset; i < (height-offset); i++) {
-    arr[i] = data[i*_width_ + column];
+    arr[i-offset] = data[i*_width_ + column];
   }
 }
 

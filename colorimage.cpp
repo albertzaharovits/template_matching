@@ -932,8 +932,8 @@ Sampling::CircularSamplingData Image::circle_sampling( const Image::ColorImage& 
 
     Image::circle_pix_mean( yc, xc, 1, r, im, &l, &a, &b);
     sdata.cis_l[i] = l; sdata.cis_l_S += l; sdata.cis_l_S2 += l*l;
-    sdata.cis_a[i] = a; sdata.cis_a_S += a; sdata.cis_a_S2 += a*a;
-    sdata.cis_b[i] = b; sdata.cis_b_S += b; sdata.cis_b_S2 += b*b;
+    sdata.cis_a[i] = a;
+    sdata.cis_b[i] = b;
     r += circle_step_delta;
   }
 
