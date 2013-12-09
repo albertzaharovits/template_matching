@@ -45,6 +45,10 @@ bool read_parameters(int argc, char* argv[], Parameters& parameters){
     return true;
 }
 
+#if SHOW_FILTERS == 1
+  std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > first_grade_pixels;
+#endif
+
 int main(int argc, char* argv[]) {
 
   unsigned int i, j;
@@ -59,10 +63,6 @@ int main(int argc, char* argv[]) {
       cout<<endl<<"For example : ./run 4 3 img.bmp template1.bmp template2.bmp"<<endl;
       return -1;
   }
-
-#if SHOW_FILTERS == 1
-  std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > first_grade_pixels;
-#endif
 
 #if _DEBUG == 1
   try {
@@ -131,11 +131,12 @@ int main(int argc, char* argv[]) {
     Utils::Array2d<fp> main_b( highj-lowj, count);
     fp* aux;
     posix_memalign( (void**)&aux, MEMALLIGN, count*sizeof(fp));
+    unsigned int k, r1;
 
     for(i=lowi; i < highi; i++) {
-      unsigned int k;
-      unsigned int r1 = circle_start;
-      for( k=0; k < template_cis[0].cis_n; k++) {
+      k = 0;
+      r1 = circle_start;
+      for( ; k < template_cis[0].cis_n; k++) {
         Image::circle_pix_mean( i, lowj, highj-lowj, r1, main_image, buff_l, buff_a, buff_b);
         main_l.scatter(k,buff_l,0);
         main_a.scatter(k,buff_a,0);
@@ -144,8 +145,8 @@ int main(int argc, char* argv[]) {
       }
 
       for(j=0;j<(highj-lowj);j++) {
-        buff_l_S[j] = main_l.reduce_row(j);
-        buff_l_S2[j] = main_l.reduce_row2(j);
+        buff_l_S[j] = __sec_reduce_add( main_l.get_row(j)[0:k]);
+        buff_l_S2[j] = __sec_reduce_add( pow( main_l.get_row(j)[0:k], 2));
       }
 
       for(j=0;j<(highj-lowj);j++) {
@@ -158,14 +159,12 @@ int main(int argc, char* argv[]) {
         fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
         S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
         cis_corr[j] = pow(S_l, _alpha_) * pow(S_c, _beta_);
-      }
-
 #if SHOW_FILTERS == 1
-      for(j=0;j<(highj-lowj);j++) {
-        if( cis_corr[j] > th1)
+        if( cis_corr[j] > th1) {
            first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
-      }
+        }
 #endif
+      }
 
       for( unsigned int temp_id = 1; temp_id < template_cis.size(); temp_id++) {
 
@@ -195,18 +194,12 @@ int main(int argc, char* argv[]) {
           fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
           S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
           cis_corr[j] = pow(S_l, _alpha_) * pow(S_c, _beta_);
-        }
-
 #if SHOW_FILTERS == 1
-        for(j=off;j<(highj-lowj-off);j++) {
-          if( cis_corr[j] > th1) {
+          if( cis_corr[j] > th1)
              first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
-             std::cout << "added " << i << " " << j << ";";
-          }
-        }
 #endif
+        }
       } // template_cis
-
     }
 
     free(buff_l); free(buff_a); free(buff_b);
