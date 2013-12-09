@@ -839,77 +839,20 @@ void Image::ColorImage::tag( Image::ColorImage& main, const Image::ColorImage& t
   }
 }
 
-void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int r,
-                             const Image::ColorImage& im, fp& _l, fp& _a, fp& _b) {
 
-  unsigned int count = 0;
-  _l = _a = _b = 0.0;
-  float p;
-  unsigned int x, y;
-
-  /* return 0 if no complete circle fits the image */
-  if( (xc < r) || ((xc+r) >= im.get_width()) || (yc < r) || ((yc+r) >= im.get_height()) )
-    return;
-
-  if( r == 0) {
-    count = 1;
-    _l = static_cast<fp>( im.L(yc, xc));
-    _a = static_cast<fp>( im.A(yc, xc));
-    _b = static_cast<fp>( im.B(yc, xc));
-  }
-  else {
-    x = 0;
-    y = r;
-    /* cross-tip points */
-    _l = static_cast<fp>( im.L( r+yc, xc) + im.L( -r+yc, xc) + im.L( yc, r+xc) + im.L( yc, -r+xc) );
-    _a = static_cast<fp>( im.A( r+yc, xc) + im.A( -r+yc, xc) + im.A( yc, r+xc) + im.A( yc, -r+xc) );
-    _b = static_cast<fp>( im.B( r+yc, xc) + im.B( -r+yc, xc) + im.B( yc, r+xc) + im.B( yc, -r+xc) );
-    count = 4;
-
-    p = 1.25f - static_cast<float>( r);
-
-    while(1) {
-
-      p = p + 2.f*static_cast<float>(++x) + 1.f;
-      if( p > 0.f)
-        p -= 2.f*static_cast<float>(--y);
-
-      if( x >= y) {
-        if( x == y) {
-          _l += static_cast<fp>( im.L(-y+yc,-x+xc) + im.L(-y+yc, x+xc) +
-                                 im.L( y+yc, x+xc) + im.L( y+yc,-x+xc));
-          _a += static_cast<fp>( im.A(-y+yc,-x+xc) + im.A(-y+yc, x+xc) +
-                                 im.A( y+yc, x+xc) + im.A( y+yc,-x+xc));
-          _b += static_cast<fp>( im.B(-y+yc,-x+xc) + im.B(-y+yc, x+xc) +
-                                 im.B( y+yc, x+xc) + im.B( y+yc,-x+xc));
-          count += 4;
-        }
-        break;
-      }
-
-      /*symmetry points in the other seven octants*/
-      _l += static_cast<fp>( im.L( y+yc, x+xc) + im.L( x+yc, y+xc) + im.L(-x+yc, y+xc) + im.L(-y+yc, x+xc) +
-                             im.L(-y+yc,-x+xc) + im.L(-x+yc,-y+xc) + im.L( x+yc,-y+xc) + im.L( y+yc,-x+xc) );
-      _a += static_cast<fp>( im.A( y+yc, x+xc) + im.A( x+yc, y+xc) + im.A(-x+yc, y+xc) + im.A(-y+yc, x+xc) +
-                             im.A(-y+yc,-x+xc) + im.A(-x+yc,-y+xc) + im.A( x+yc,-y+xc) + im.A( y+yc,-x+xc) );
-      _b += static_cast<fp>( im.B( y+yc, x+xc) + im.B( x+yc, y+xc) + im.B(-x+yc, y+xc) + im.B(-y+yc, x+xc) +
-                             im.B(-y+yc,-x+xc) + im.B(-x+yc,-y+xc) + im.B( x+yc,-y+xc) + im.B( y+yc,-x+xc) );
-      count += 8;
-    }
-  }
-
-  _l = _l/count;
-  _a = _a/count;
-  _b = _b/count;
-}
-
-void Image::circle_pix_mean2( unsigned int yc, unsigned int xc, unsigned int dx,
+void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
                               unsigned int r,
                               const Image::ColorImage& im, fp* _l, fp* _a, fp* _b) {
 
   unsigned int count = 0;
   float p;
   unsigned int x, y;
+
+#if _DEBUG == 1
+  /* return 0 if no complete circle fits the image */
+  if( (xc < r) || ((xc+dx+r) >= im.get_width()) || (yc < r) || ((yc+r) >= im.get_height()) )
+    throw 13;
+#endif
 
   if( r == 0) {
     count = 1;
@@ -987,7 +930,7 @@ Sampling::CircularSamplingData Image::circle_sampling( const Image::ColorImage& 
 
   for(uint i=0;i<count;i++) {
 
-    Image::circle_pix_mean( yc, xc, r, im, l, a, b);
+    Image::circle_pix_mean( yc, xc, 1, r, im, &l, &a, &b);
     sdata.cis_l[i] = l; sdata.cis_l_S += l; sdata.cis_l_S2 += l*l;
     sdata.cis_a[i] = a; sdata.cis_a_S += a; sdata.cis_a_S2 += a*a;
     sdata.cis_b[i] = b; sdata.cis_b_S += b; sdata.cis_b_S2 += b*b;

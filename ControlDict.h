@@ -9,6 +9,8 @@
 
 #define SHOW_FILTERS 1
 
+#define _DEBUG 1
+
 /* luminance correlation coef */
 static const float _alpha_ = 0.8f;
 /* chromaticy correlation coef */

@@ -90,16 +90,14 @@ namespace Image {
                                         float scale, float angle);
 
     bool operator<(const ColorImage& other) const;
-    friend void circle_pix_mean2( unsigned int yc, unsigned int xc, unsigned int dx,
+    friend void circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
                                   unsigned int r,
                                   const Image::ColorImage& im, fp* _l, fp* _a, fp* _b);
   };
 
-  void circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int r,
-                        const Image::ColorImage& im, fp& _l, fp& _a, fp& _b);
-  void circle_pix_mean2( unsigned int yc, unsigned int xc, unsigned int dx,
-                         unsigned int r,
-                         const Image::ColorImage& im, fp* _l, fp* _a, fp* _b);
+  void circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
+                        unsigned int r,
+                        const Image::ColorImage& im, fp* _l, fp* _a, fp* _b);
 
 
   Sampling::CircularSamplingData circle_sampling( const Image::ColorImage& im,

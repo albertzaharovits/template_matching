@@ -134,68 +134,83 @@ int main(int argc, char* argv[]) {
 
     for(i=lowi; i < highi; i++) {
       unsigned int k;
-      const Sampling::CircularSamplingData& temp_cis = template_cis[0];
-      unsigned int r = circle_start;
-      for( k=0; k < temp_cis.cis_n; k++) {
-        Image::circle_pix_mean2( i, lowj, highj-lowj, r, main_image, buff_l, buff_a, buff_b);
+      unsigned int r1 = circle_start;
+      for( k=0; k < template_cis[0].cis_n; k++) {
+        Image::circle_pix_mean( i, lowj, highj-lowj, r1, main_image, buff_l, buff_a, buff_b);
         main_l.scatter(k,buff_l,0);
         main_a.scatter(k,buff_a,0);
         main_b.scatter(k,buff_b,0);
-        r += circle_step_delta;
+        r1 += circle_step_delta;
       }
 
-      for(j=0;j<(highj-lowj+1);j++) {
+      for(j=0;j<(highj-lowj);j++) {
         buff_l_S[j] = main_l.reduce_row(j);
         buff_l_S2[j] = main_l.reduce_row2(j);
       }
-      for(j=0;j<(highj-lowj+1);j++) {
+      for(j=0;j<(highj-lowj);j++) {
         buff_a_S[j] = main_a.reduce_row(j);
         buff_a_S2[j] = main_a.reduce_row2(j);
       }
-      for(j=0;j<(highj-lowj+1);j++) {
+      for(j=0;j<(highj-lowj);j++) {
         buff_b_S[j] = main_b.reduce_row(j);
         buff_b_S2[j] = main_b.reduce_row2(j);
       }
 
-      for(j=0;j<(highj-lowj+1);j++) {
-        fp S_mt = __sec_reduce_add( main_l.get_row(j)[0:k] * temp_cis.cis_l[0:k]);
-        fp S_l = (S_mt - buff_l_S[j]*temp_cis.cis_l_S/k)
-                / sqrt( (temp_cis.cis_l_S2 - pow( temp_cis.cis_l_S, 2)/k)
+      for(j=0;j<(highj-lowj);j++) {
+        fp S_mt = __sec_reduce_add( main_l.get_row(j)[0:k] * template_cis[0].cis_l[0:k]);
+        fp S_l = (S_mt - buff_l_S[j]*template_cis[0].cis_l_S/k)
+                / sqrt( (template_cis[0].cis_l_S2 - pow( template_cis[0].cis_l_S, 2)/k)
                         * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
-        aux[0:k] = (pow( main_a.get_row(j)[0:k] - temp_cis.cis_a[0:k], 2)
-                    + pow( main_b.get_row(j)[0:k] - temp_cis.cis_b[0:k], 2));
+        aux[0:k] = (pow( main_a.get_row(j)[0:k] - template_cis[0].cis_a[0:k], 2)
+                    + pow( main_b.get_row(j)[0:k] - template_cis[0].cis_b[0:k], 2));
         fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
         S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
         cis_corr[j] = pow(S_l, _alpha_) * pow(S_c, _beta_);
       }
 
 #if SHOW_FILTERS == 1
-      for(j=0;j<(highj-lowj+1);j++) {
+      for(j=0;j<(highj-lowj);j++) {
         if( cis_corr[j] > th1)
            first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
       }
 #endif
 
-      unsigned int off = circle_step_delta;
-      for(unsigned int r=(min_radius+circle_step_delta); r <= std::min(i, max_radius); r+=circle_step_delta) {
-        Image::circle_pix_mean2( i, lowj+off, highj-lowj-2*off, r, main_image, buff_l, buff_a, buff_b);
-        main_l.scatter(k,buff_l,off);
-        for(j=off;j<(highj-lowj-2*off+1);j++) {
-          buff_l_S[j] += buff_l[j-off];
-          buff_l_S2[j] += buff_l[j-off]*buff_l[j-off];
-        }
-        main_a.scatter(k,buff_a,off);
-        for(j=off;j<(highj-lowj-2*off+1);j++) {
-          buff_a_S[j] += buff_a[j-off];
-          buff_a_S2[j] += buff_a[j-off]*buff_a[j-off];
-        }
-        main_b.scatter(k,buff_b,off);
-        for(j=off;j<(highj-lowj-2*off+1);j++) {
-          buff_b_S[j] += buff_b[j-off];
-          buff_b_S2[j] += buff_b[j-off]*buff_a[j-off];
-        }
-        k++;
-      }
+//      for( unsigned int temp_id = 1; temp_id < template_cis.size(); temp_id++) {
+//        const Sampling::CircularSamplingData& temp_cis = template_cis[temp_id];
+//
+//        unsigned int off = circle_step_delta * (template_cis[temp_id-1].cis_n - template_cis[temp_id].cis_n);
+//        unsigned int r2 = r1 + off;
+//
+//        for( ; k < template_cis[temp_id].cis_n; k++) {
+//          Image::circle_pix_mean( i, lowj-off, highj-lowj-2*off, r1, main_image, buff_l, buff_a, buff_b);
+//          main_l.scatter(k, buff_l, off);
+//          buff_l_S[off:(highj-lowj-2*off+1)] += buff_l[0:(highj-lowj-2*off+1)];
+//          main_a.scatter(k, buff_a, off);
+//          main_b.scatter(k, buff_b, off);
+//          r1 += circle_step_delta;
+//        }
+//      }
+//
+//      unsigned int off = circle_step_delta;
+//      for(unsigned int r=(min_radius+circle_step_delta); r <= std::min(i, max_radius); r+=circle_step_delta) {
+//        Image::circle_pix_mean( i, lowj+off, highj-lowj-2*off, r, main_image, buff_l, buff_a, buff_b);
+//        main_l.scatter(k,buff_l,off);
+//        for(j=off;j<(highj-lowj-2*off+1);j++) {
+//          buff_l_S[j] += buff_l[j-off];
+//          buff_l_S2[j] += buff_l[j-off]*buff_l[j-off];
+//        }
+//        main_a.scatter(k,buff_a,off);
+//        for(j=off;j<(highj-lowj-2*off+1);j++) {
+//          buff_a_S[j] += buff_a[j-off];
+//          buff_a_S2[j] += buff_a[j-off]*buff_a[j-off];
+//        }
+//        main_b.scatter(k,buff_b,off);
+//        for(j=off;j<(highj-lowj-2*off+1);j++) {
+//          buff_b_S[j] += buff_b[j-off];
+//          buff_b_S2[j] += buff_b[j-off]*buff_a[j-off];
+//        }
+//        k++;
+//      }
 
     }
 
