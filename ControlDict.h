@@ -23,8 +23,7 @@ static const float scaling_step_delta = 0.2f;
 static const unsigned int circle_start = 0;
 static const unsigned int circle_step_delta = 2;
 /* threshold for first grade candidate pixels */
-static const float th1 = 0.85f;
-//static const float th1 = 1.98f;
+static const float th1 = 0.95f;
 
 /* RADIAL SAMPLING FILTER SETTINGS */
 /* rate of angle sampling */

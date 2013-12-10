@@ -9,6 +9,8 @@
 #include "colorimage.h"
 #include "ControlDict.h"
 
+#include "omp.h"
+
 using namespace std;
 
 /*!
@@ -63,6 +65,9 @@ int main(int argc, char* argv[]) {
       cout<<endl<<"For example : ./run 4 3 img.bmp template1.bmp template2.bmp"<<endl;
       return -1;
   }
+
+  if( parameters.nb_threads >= 1)
+    omp_set_num_threads(parameters.nb_threads);
 
 #if _DEBUG == 1
   try {
@@ -121,13 +126,14 @@ int main(int argc, char* argv[]) {
   }
 
   Image::ColorImage main_image( parameters.main_image_name);
-  unsigned int min_radius = templates[0].get_radius();
-  unsigned int lowi = min_radius;
-  unsigned int highi = main_image.get_height() - min_radius;
-  unsigned int lowj = min_radius;
-  unsigned int highj = main_image.get_width() - min_radius;
+  const unsigned int min_radius = templates[0].get_radius();
+  const unsigned int lowi = min_radius;
+  const unsigned int highi = main_image.get_height() - min_radius;
+  const unsigned int lowj = min_radius;
+  const unsigned int highj = main_image.get_width() - min_radius;
 
-  { // forces destructors free memory
+#pragma omp parallel default(shared)
+  {
     fp* buff_l, *buff_a, *buff_b;
     posix_memalign( (void**)&buff_l, MEMALLIGN, (highj-lowj)*sizeof(fp));
     posix_memalign( (void**)&buff_a, MEMALLIGN, (highj-lowj)*sizeof(fp));
@@ -136,8 +142,10 @@ int main(int argc, char* argv[]) {
     posix_memalign( (void**)&buff_l_S, MEMALLIGN, (highj-lowj)*sizeof(fp));
     fp* buff_l_S2;
     posix_memalign( (void**)&buff_l_S2, MEMALLIGN, (highj-lowj)*sizeof(fp));
-    fp* cis_corr;
-    posix_memalign( (void**)&cis_corr, MEMALLIGN, (highj-lowj)*sizeof(fp));
+    uint* cis_id;
+    posix_memalign( (void**)&cis_id, MEMALLIGN, (highj-lowj)*sizeof(uint));
+    float* cis_scale;
+    posix_memalign( (void**)&cis_scale, MEMALLIGN, (highj-lowj)*sizeof(float));
 
     unsigned int max_radius = std::ceil( templates[parameters.template_names.size()-1].get_radius() * parameters.max_scale);
     uint count = (max_radius-circle_start)/circle_step_delta + 1;
@@ -148,6 +156,8 @@ int main(int argc, char* argv[]) {
     posix_memalign( (void**)&aux, MEMALLIGN, count*sizeof(fp));
     unsigned int k, r1;
 
+#pragma omp for \
+  private(i, j)
     for(i=lowi; i < highi; i++) {
       k = 0;
       r1 = circle_start;
@@ -173,12 +183,17 @@ int main(int argc, char* argv[]) {
                     + pow( main_b.get_row(j)[0:k] - template_cis[0].cis_b[0:k], 2));
         fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
         S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
-        cis_corr[j] = pow(S_l, _alpha_) * pow(S_c, _beta_);
+        fp cis_corr = pow(S_l, _alpha_) * pow(S_c, _beta_);
+        if( cis_corr > th1) {
+          cis_id[j] = template_cis[0].id;
+          cis_scale[j] = template_cis[0].scale;
 #if SHOW_FILTERS == 1
-        if( cis_corr[j] > th1) {
+#pragma omp critical
+{
            first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
-        }
+}
 #endif
+        }
       }
 
       for( unsigned int temp_id = 1; temp_id < template_cis.size(); temp_id++) {
@@ -208,19 +223,29 @@ int main(int argc, char* argv[]) {
                       + pow( main_b.get_row(j)[0:k] - template_cis[temp_id].cis_b[0:k], 2));
           fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
           S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
-          cis_corr[j] = pow(S_l, _alpha_) * pow(S_c, _beta_);
+          fp cis_corr = pow(S_l, _alpha_) * pow(S_c, _beta_);
+          if( cis_corr > th1) {
+            cis_id[j] = template_cis[temp_id].id;
+            cis_scale[j] = template_cis[temp_id].scale;
 #if SHOW_FILTERS == 1
-          if( cis_corr[j] > th1)
+#pragma omp critical
+{
              first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
+}
 #endif
+          }
         }
       } // template_cis
+
+
+      // Tefi filter using: cis_id, cis_scale, template_ras_l, template_ras_a, template_ras_b
     }
 
     free(buff_l); free(buff_a); free(buff_b);
     free(buff_l_S);
     free(buff_l_S2);
-    free(cis_corr);
+    free(cis_id);
+    free(cis_scale);
     free(aux);
   }
 
