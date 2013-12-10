@@ -87,23 +87,38 @@ int main(int argc, char* argv[]) {
   /* circular sampling data */
   std::vector< Sampling::CircularSamplingData > template_cis;
   template_cis.reserve( parameters.template_names.size() * scaling_step_count);
-  /* sampling templates */
+  /* circular sampling templates */
+  j = 0;
   for(const Image::ColorImage& temp : templates) {
 
-    Sampling::CircularSamplingData cs = Image::circle_sampling( temp, circle_start, circle_step_delta);
-    cs.id = temp.get_id();
+    Sampling::CircularSamplingData cs = Image::circular_sampling( temp, circle_start, circle_step_delta);
+    cs.id = j;
     cs.scale = scaling_start;
     template_cis.push_back( std::move(cs));
     for( float s = scaling_start + scaling_step_delta; s <= scaling_end + 0.0003f; s+= scaling_step_delta) {
       Image::ColorImage scaled = temp.scale_image(s);
-      cs = Image::circle_sampling( scaled, circle_start, circle_step_delta);
-      cs.id = temp.get_id();
+      cs = Image::circular_sampling( scaled, circle_start, circle_step_delta);
+      cs.id = j;
       cs.scale = s;
       template_cis.push_back( std::move(cs));
     }
+    j++;
   }
-
   std::sort( template_cis.begin(), template_cis.end());
+
+  /* radial sampling templates */
+  const float rotation_step_delta = ( rotation_end - rotation_start) / rotation_step_count;
+  /* radial sampling data */
+  Utils::Array2d<fp> template_ras_l( parameters.template_names.size(), rotation_step_count);
+  Utils::Array2d<fp> template_ras_a( parameters.template_names.size(), rotation_step_count);
+  Utils::Array2d<fp> template_ras_b( parameters.template_names.size(), rotation_step_count);
+  j = 0;
+  for(const Image::ColorImage& temp : templates) {
+    Image::radial_sampling( temp, temp.get_height()/2, temp.get_width()/2, temp.get_radius(),
+                            rotation_start, rotation_step_delta, rotation_step_count,
+                            template_ras_l.get_row(j), template_ras_a.get_row(j), template_ras_b.get_row(j));
+    j++;
+  }
 
   Image::ColorImage main_image( parameters.main_image_name);
   unsigned int min_radius = templates[0].get_radius();

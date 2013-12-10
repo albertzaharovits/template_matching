@@ -99,9 +99,15 @@ namespace Image {
                         unsigned int r,
                         const Image::ColorImage& im, fp* _l, fp* _a, fp* _b);
 
+  void line_pix_mean( unsigned int yc, unsigned int xc, float r, float angle, const Image::ColorImage& im,
+                      fp* _l, fp* _a, fp* _b);
 
-  Sampling::CircularSamplingData circle_sampling( const Image::ColorImage& im,
+  Sampling::CircularSamplingData circular_sampling( const Image::ColorImage& im,
                                         uint circle_start, uint circle_step_delta);
+
+  void radial_sampling( const Image::ColorImage& im, unsigned int yc, unsigned int xc, unsigned int r,
+                        float rotation_start, float rotation_step_delta, unsigned int rotation_step_count,
+                        fp* _l, fp* _a, fp* _b);
 } //namespace
 
 inline

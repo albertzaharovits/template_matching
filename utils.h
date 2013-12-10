@@ -52,6 +52,8 @@ namespace Utils {
 
     const T* get_data() const;
     const T* get_row(unsigned int row) const;
+    T* get_data();
+    T* get_row(unsigned int row);
   };
 
 }
@@ -64,7 +66,19 @@ const T* Utils::Array2d<T>::get_row(unsigned int row) const {
 
 template< typename T>
 inline
+T* Utils::Array2d<T>::get_row(unsigned int row) {
+  return data + row*_width_;
+}
+
+template< typename T>
+inline
 const T* Utils::Array2d<T>::get_data() const {
+  return data;
+}
+
+template< typename T>
+inline
+T* Utils::Array2d<T>::get_data() {
   return data;
 }
 

@@ -8,6 +8,8 @@ SOURCES += main.cpp \
     sampling.cpp
 
 QMAKE_CXXFLAGS += -std=c++0x
+QMAKE_CXXFLAGS += -fopenmp
+QMAKE_LFLAGS += -fopenmp
 
 ## MPI Settings
 #QMAKE_CXX = mpicxx

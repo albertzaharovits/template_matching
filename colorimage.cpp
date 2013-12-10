@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "utils.h"
 #include "colorimage.h"
 
@@ -915,7 +917,7 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
   _b[0:dx] /= count;
 }
 
-Sampling::CircularSamplingData Image::circle_sampling( const Image::ColorImage& im,
+Sampling::CircularSamplingData Image::circular_sampling( const Image::ColorImage& im,
                                                        uint circle_start, uint circle_step_delta) {
 
   uint radius = im.get_radius();
@@ -938,4 +940,227 @@ Sampling::CircularSamplingData Image::circle_sampling( const Image::ColorImage& 
   }
 
   return sdata;
+}
+
+void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angle, const Image::ColorImage& im,
+                           fp* _l, fp* _a, fp* _b) {
+#ifdef _DEBUG
+  assert( (angle >= 0.f) && (angle <= 360.f));
+  assert( r > 0.f);
+  assert( ( yc < im.get_height()) && ( xc < im.get_width()));
+#endif
+
+  *_l = 0.0; *_a = 0.0; *_b = 0.0;
+  unsigned int count = 0;
+  int dx, dy, D;
+  int xf, yf, x, y;
+
+  dx = static_cast<int>(round(r * cos( angle * Utils::D2R)));
+  dy = static_cast<int>(round(r * sin( angle * Utils::D2R)));
+
+  xf = static_cast<int>(std::min( std::max(static_cast<int>(xc) + dx, 0), static_cast<int>(im.get_width())-1));
+  yf = static_cast<int>(std::min( std::max(static_cast<int>(yc) + dy, 0), static_cast<int>(im.get_height())-1));
+
+  if( angle >= 0.f && angle < 45.f) {
+
+    D = 2*dy - dx;
+    y = yc;
+
+    for( x = xc; (x <= xf) && (y <= yf); ++x) {
+
+      D += 2*dy;
+      if( D > 0) {
+        *_l += static_cast<fp>(im.L( ++y, x));
+        *_a += static_cast<fp>(im.A( ++y, x));
+        *_b += static_cast<fp>(im.B( ++y, x));
+        D -= 2*dx;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+
+  }
+  else if( angle >= 45.f && angle < 90.f) {
+
+    D = 2*dx + dy;
+    x = xc;
+
+    for( y = yc; (y <= yf) && (x <= xf); ++y) {
+
+      D -= 2*dx;
+      if( D < 0) {
+        *_l += static_cast<fp>(im.L( y, ++x));
+        *_a += static_cast<fp>(im.A( y, ++x));
+        *_b += static_cast<fp>(im.B( y, ++x));
+        D += 2*dy;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+
+  }
+  else if( angle >= 90.f && angle < 135.f) {
+
+    D = 2*dx + dy;
+    x = xc;
+
+    for( y = yc; (y <= yf) && (x >= xf); ++y) {
+
+      D += 2*dx;
+      if( D < 0) {
+        *_l += static_cast<fp>(im.L( y, --x));
+        *_a += static_cast<fp>(im.A( y, --x));
+        *_b += static_cast<fp>(im.B( y, --x));
+        D += 2*dy;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+
+  }
+  else if( angle >= 135.f && angle < 180.f) {
+
+    D = -2*dy - dx;
+    y = yc;
+
+    for( x = xc; (x >= xf) && (y <= yf); --x) {
+
+      D -= 2*dy;
+      if( D < 0) {
+        *_l += static_cast<fp>(im.L( ++y, x));
+        *_a += static_cast<fp>(im.A( ++y, x));
+        *_b += static_cast<fp>(im.B( ++y, x));
+        D -= 2*dx;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+  }
+  else if( angle >= 180.f && angle < 225.f) {
+
+    D = 2*dy - dx;
+    y = yc;
+
+    for( x = xc; (x >= xf) && (y >= yf); --x) {
+
+      D += 2*dy;
+      if( D < 0) {
+        *_l += static_cast<fp>(im.L( --y, x));
+        *_a += static_cast<fp>(im.A( --y, x));
+        *_b += static_cast<fp>(im.B( --y, x));
+        D -= 2*dx;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+  }
+  else if( angle >= 225.f && angle < 270.f) {
+
+    D = 2*dx - dy;
+    x = xc;
+
+    for( y = yc; (y >= yf) && (x >= xf); --y) {
+
+      D += 2*dx;
+      if( D < 0) {
+        *_l += static_cast<fp>(im.L( y, --x));
+        *_a += static_cast<fp>(im.A( y, --x));
+        *_b += static_cast<fp>(im.B( y, --x));
+        D -= 2*dy;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+  }
+  else if( angle >= 270.f && angle < 315.f) {
+
+    D = 2*dx + dy;
+    x = xc;
+
+    for( y = yc; (y >= yf) && (x <= xf); --y) {
+
+      D += 2*dx;
+      if( D > 0) {
+        *_l += static_cast<fp>(im.L( y, ++x));
+        *_a += static_cast<fp>(im.A( y, ++x));
+        *_b += static_cast<fp>(im.B( y, ++x));
+        D += 2*dy;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+
+  }
+  else if( angle >= 315.f && angle <= 360.f) {
+
+    D = 2*dy + dx;
+    y = yc;
+
+    for( x = xc; (x <= xf) && (y >= yf); ++x) {
+
+      D += 2*dy;
+      if( D < 0) {
+        *_l += static_cast<fp>(im.L( --y, x));
+        *_a += static_cast<fp>(im.A( --y, x));
+        *_b += static_cast<fp>(im.B( --y, x));
+        D += 2*dx;
+      }
+      else {
+        *_l += static_cast<fp>(im.L( y, x));
+        *_a += static_cast<fp>(im.A( y, x));
+        *_b += static_cast<fp>(im.B( y, x));
+      }
+
+      count++;
+    }
+
+  }
+
+  *_l /= count;
+  *_a /= count;
+  *_b /= count;
+}
+
+void Image::radial_sampling( const Image::ColorImage& im, unsigned int yc, unsigned int xc, unsigned int r,
+                             float rotation_start, float rotation_step_delta, unsigned int rotation_step_count,
+                              fp* _l, fp* _a, fp* _b) {
+
+  for( unsigned int k=0; k < rotation_step_count; k++) {
+    Image::line_pix_mean( yc, xc, r, rotation_start + k*rotation_step_delta, im, &_l[k], &_a[k], &_b[k]);
+  }
 }
