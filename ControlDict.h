@@ -31,7 +31,8 @@ static const unsigned int rotation_step_count = 72;
 static const float rotation_start = 0.f;
 static const float rotation_end = 360.f; /* not including this value */
 /* threshold for second grade candidate pixels */
-static const float th2 = 0.8f;
+//static const float th2 = 0.8f;
+static const float th2 = 0.65f;
 
 /* threshold for last filter */
 static const float th3 = 0.54f;
