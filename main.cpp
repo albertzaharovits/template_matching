@@ -292,6 +292,7 @@ int main(int argc, char* argv[]) {
           angle += rotation_step_delta;
         }
 
+
         if( max_ras_corr > th2) {
 #if SHOW_FILTERS == 1
 #pragma omp critical (second)
