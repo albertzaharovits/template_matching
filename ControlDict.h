@@ -27,14 +27,16 @@ static const float th1 = 0.95f;
 
 /* RADIAL SAMPLING FILTER SETTINGS */
 /* rate of angle sampling */
-static const unsigned int rotation_step_count = 72;
+//static const unsigned int rotation_step_count = 72;
+static const unsigned int rotation_step_count = 128;
 static const float rotation_start = 0.f;
 static const float rotation_end = 360.f; /* not including this value */
 /* threshold for second grade candidate pixels */
 //static const float th2 = 0.8f;
-static const float th2 = 0.65f;
+static const float th2 = 0.35f;
 
 /* threshold for last filter */
-static const float th3 = 0.54f;
+//static const float th3 = 0.54f;
+static const float th3 = 0.74f;
 
 #endif // CONTROLDICT_H

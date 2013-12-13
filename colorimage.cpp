@@ -2,6 +2,7 @@
 
 #include "utils.h"
 #include "colorimage.h"
+#include "ControlDict.h"
 
 using namespace std;
 
@@ -671,6 +672,7 @@ fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /*
 #endif
   /* sums for cross-correlation */
   fp f_sum=0.0, f_sum2=0.0, t_sum=0.0, t_sum2=0.0, ft_sum=0.0;
+  fp S_c=0.0;
   unsigned int count = 0;
 
   const unsigned int height = static_cast<unsigned int>( floor( temp.get_height() * scale));
@@ -692,7 +694,7 @@ fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /*
     const unsigned int y1 = min( y0 + 1, temp.height - 1);
 #endif
 
-#pragma simd assert reduction(+:count) reduction(+:f_sum) reduction(+:f_sum2) reduction(+:t_sum) reduction(+:t_sum2) reduction(+:ft_sum)
+#pragma simd assert reduction(+:count) reduction(+:f_sum) reduction(+:f_sum2) reduction(+:t_sum) reduction(+:t_sum2) reduction(+:ft_sum) reduction(+:S_c)
     for( unsigned int j = 0; j < width; ++j) {
 
       fp x = j*step;
@@ -714,9 +716,25 @@ fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /*
         fp f11 = static_cast<fp>( temp.L( y1, x1));
         float t_val = static_cast<float>( (y-y0) * ((x-x0)*f11 + (x1-x)*f10) +
                                           (y1-y) * ((x-x0)*f01 + (x1-x)*f00) );
+        f00 = static_cast<fp>( temp.A( y0, x0));
+        f01 = static_cast<fp>( temp.A( y0, x1));
+        f10 = static_cast<fp>( temp.A( y1, x0));
+        f11 = static_cast<fp>( temp.A( y1, x1));
+        float t_val_a = static_cast<float>( (y-y0) * ((x-x0)*f11 + (x1-x)*f10) +
+                                            (y1-y) * ((x-x0)*f01 + (x1-x)*f00) );
+        f00 = static_cast<fp>( temp.B( y0, x0));
+        f01 = static_cast<fp>( temp.B( y0, x1));
+        f10 = static_cast<fp>( temp.B( y1, x0));
+        f11 = static_cast<fp>( temp.B( y1, x1));
+        float t_val_b = static_cast<float>( (y-y0) * ((x-x0)*f11 + (x1-x)*f10) +
+                                            (y1-y) * ((x-x0)*f01 + (x1-x)*f00) );
 #else
         float t_val = static_cast<float>( temp.L( static_cast<unsigned int>( min( static_cast<unsigned int>(round(y)), temp.get_height()-1)),
                                                   static_cast<unsigned int>( min( static_cast<unsigned int>(round(x)), temp.get_width()-1))) );
+        float t_val_a = static_cast<float>( temp.A( static_cast<unsigned int>( min( static_cast<unsigned int>(round(y)), temp.get_height()-1)),
+                                                    static_cast<unsigned int>( min( static_cast<unsigned int>(round(x)), temp.get_width()-1))) );
+        float t_val_b = static_cast<float>( temp.B( static_cast<unsigned int>( min( static_cast<unsigned int>(round(y)), temp.get_height()-1)),
+                                                    static_cast<unsigned int>( min( static_cast<unsigned int>(round(x)), temp.get_width()-1))) );
 #endif
 
         /* get value of pixel from main image */
@@ -731,9 +749,25 @@ fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /*
         fp _f11 = static_cast<fp>( main.L( _y1, _x1));
         float f_val = static_cast<float>( (ypp-_y0) * ((xpp-_x0)*_f11 + (_x1-xpp)*_f10) +
                                           (_y1-ypp) * ((xpp-_x0)*_f01 + (_x1-xpp)*_f00) );
+        _f00 = static_cast<fp>( main.A( _y0, _x0));
+        _f01 = static_cast<fp>( main.A( _y0, _x1));
+        _f10 = static_cast<fp>( main.A( _y1, _x0));
+        _f11 = static_cast<fp>( main.A( _y1, _x1));
+        float f_val_a = static_cast<float>( (ypp-_y0) * ((xpp-_x0)*_f11 + (_x1-xpp)*_f10) +
+                                            (_y1-ypp) * ((xpp-_x0)*_f01 + (_x1-xpp)*_f00) );
+        _f00 = static_cast<fp>( main.B( _y0, _x0));
+        _f01 = static_cast<fp>( main.B( _y0, _x1));
+        _f10 = static_cast<fp>( main.B( _y1, _x0));
+        _f11 = static_cast<fp>( main.B( _y1, _x1));
+        float f_val_b = static_cast<float>( (ypp-_y0) * ((xpp-_x0)*_f11 + (_x1-xpp)*_f10) +
+                                            (_y1-ypp) * ((xpp-_x0)*_f01 + (_x1-xpp)*_f00) );
 #else
         float f_val = static_cast<float>( main.L( static_cast<unsigned int>( static_cast<unsigned int>(round(ypp))),
                                                   static_cast<unsigned int>( static_cast<unsigned int>(round(xpp))) ));
+        float f_val_a = static_cast<float>( main.A( static_cast<unsigned int>( static_cast<unsigned int>(round(ypp))),
+                                                    static_cast<unsigned int>( static_cast<unsigned int>(round(xpp))) ));
+        float f_val_b = static_cast<float>( main.B( static_cast<unsigned int>( static_cast<unsigned int>(round(ypp))),
+                                                    static_cast<unsigned int>( static_cast<unsigned int>(round(xpp))) ));
 #endif
 
         /* sums for cross-correlation */
@@ -742,14 +776,19 @@ fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /*
         f_sum += f_val;
         f_sum2 += f_val * f_val;
         ft_sum += f_val * t_val;
+
+        S_c += sqrt( pow( t_val_a - f_val_a, 2) + pow( t_val_b - f_val_b, 2));
+
         count++;
       }
     }
 
     y += step;
   }
+  S_c = 1.f - (S_c/(200.f*sqrt(2.f)*count));
+  fp S_l = (ft_sum - (f_sum/count*t_sum)) / sqrt( (f_sum2 - (f_sum/count*f_sum)) * (t_sum2 - (t_sum/count*t_sum)));
 
-  return (ft_sum - (f_sum/count*t_sum)) / sqrt( (f_sum2 - (f_sum/count*f_sum)) * (t_sum2 - (t_sum/count*t_sum)) );
+  return pow(S_l, _alpha_) * pow(S_c, _beta_);
 }
 
 
