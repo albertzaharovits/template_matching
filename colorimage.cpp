@@ -788,6 +788,9 @@ fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /*
   S_c = 1.f - (S_c/(200.f*sqrt(2.f)*count));
   fp S_l = (ft_sum - (f_sum/count*t_sum)) / sqrt( (f_sum2 - (f_sum/count*f_sum)) * (t_sum2 - (t_sum/count*t_sum)));
 
+  if( S_l > 4.f || S_l < 0.f)
+    return 0;
+
   return pow(S_l, _alpha_) * pow(S_c, _beta_);
 }
 
