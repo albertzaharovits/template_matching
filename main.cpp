@@ -53,49 +53,6 @@ bool read_parameters(int argc, char* argv[], Parameters& parameters){
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > third_grade_pixels;
 #endif
 
-//int main() {
-//
-//  Image::ColorImage img( "test_case_1/001template.bmp");
-//  Image::ColorImage r1 = img.rotate_image(100.f);
-//  Image::ColorImage::write_image_to_bitmap(r1, "rotated.bmp");
-//  fp* ls1 = (fp*) malloc( 36 * sizeof(fp));
-//  fp* as1 = (fp*) malloc( 36 * sizeof(fp));
-//  fp* bs1 = (fp*) malloc( 36 * sizeof(fp));
-//  fp* ls2 = (fp*) malloc( 36 * sizeof(fp));
-//  fp* as2 = (fp*) malloc( 36 * sizeof(fp));
-//  fp* bs2 = (fp*) malloc( 36 * sizeof(fp));
-//  float radius = img.get_radius()-8;
-//  Image::radial_sampling( img, img.get_height()/2, img.get_width()/2, radius,
-//                             3.f, 10.f, 36, ls1, as1, bs1);
-//  Image::radial_sampling( r1, r1.get_height()/2, r1.get_width()/2, radius,
-//                             3.f, 10.f, 36, ls2, as2, bs2);
-//
-//  fp S_ft = 0, S_f=0, S_t = 0, S_f2=0, S_t2=0;
-//  for( int i=0; i<26; i++) {
-//    S_ft += ls1[i] * ls2[i+10];
-//    S_f += ls1[i];
-//    S_f2 += ls1[i]*ls1[i];
-//    S_t += ls2[i+10];
-//    S_t2 += ls2[i+10]*ls2[i+10];
-//    //std::cout << "( " << ls1[i] << " , " << ls2[i+10] << " ), ";
-//  }
-//  for( int i=26; i<36; i++) {
-//    S_ft += ls1[i] * ls2[i-26];
-//    S_f += ls1[i];
-//    S_f2 += ls1[i]*ls1[i];
-//    S_t += ls2[i-26];
-//    S_t2 += ls2[i-26]*ls2[i-26];
-//    //std::cout << "( " << ls1[i] << " , " << ls2[i-26] << " ), ";
-//  }
-//
-//  fp S_l  =  (S_ft - S_f*S_t/rotation_step_count) /
-//      sqrt( (S_f2 - S_f*S_f/rotation_step_count) * (S_t2 - S_t*S_t/rotation_step_count) );
-//
-//  std::cout << S_l << std::endl;
-//
-//  return 0;
-//}
-
 int main(int argc, char* argv[]) {
 
   unsigned int i, j;
@@ -404,7 +361,6 @@ int main(int argc, char* argv[]) {
         third_grade_pixels.push_back( std::make_tuple( i, std::get<0>(*it)));
 }
 #endif
-
       }
 
     } // i
@@ -460,77 +416,3 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
-
-
-/***************************************************************************************************************
-  **************************************************************************************************************
-  **************************************************************************************************************/
-
-//    Image::ColorImage::write_image_to_bitmap(img, "/home/albert/workspace/ayc/original.bmp");
-//    Image::ColorImage blur = Image::ColorImage::gaussian_smoother( img);
-//    Image::ColorImage::write_image_to_bitmap(blur, "/home/albert/workspace/ayc/blur.bmp");
-//    Image::ColorImage::write_image_to_bitmap(img.scale_image(1.2f), "/home/albert/workspace/ayc/scaled12.bmp");
-//    Image::ColorImage::write_image_to_bitmap(img.scale_image(0.5f), "/home/albert/workspace/ayc/scaled05.bmp");
-//    Image::ColorImage::write_image_to_bitmap(img.rotate_image(10.f), "/home/albert/workspace/ayc/rotate10.bmp");
-//    Image::ColorImage::write_image_to_bitmap(img.rotate_image(20.f), "/home/albert/workspace/ayc/rotate20.bmp");
-
-//    Image::ColorImage::write_image_to_bitmap(img.scale_image(1.2f), "scaled12.bmp");
-//    Image::ColorImage::write_image_to_bitmap(img.scale_image(0.5f), "scaled05.bmp");
-//    Image::ColorImage temp("test_case_2/001template.bmp");
-//    Image::ColorImage::tag( img, temp, 500, 500, 2.f, 0.f);
-//    fp corr = Image::ColorImage::bc_invariant_correlation( img, temp, 500, 500, 2.f, 0.f);
-//    cout << corr << endl;
-//
-//    cout<<endl;
-//
-//    corr = Image::ColorImage::bc_invariant_correlation( img, temp, 500, 500, 1.9f, 0.f);
-//    cout << corr << endl;
-//    corr = Image::ColorImage::bc_invariant_correlation( img, temp, 500, 500, 1.8f, 0.f);
-//    cout << corr << endl;
-//    corr = Image::ColorImage::bc_invariant_correlation( img, temp, 500, 500, 1.7f, 0.f);
-//    cout << corr << endl;
-//
-//    cout<<endl;
-//
-//    corr = Image::ColorImage::bc_invariant_correlation( img, temp, 498, 499, 2.f, 0.f);
-//    cout << corr << endl;
-//
-//    cout<<endl;
-//
-//    corr = Image::ColorImage::bc_invariant_correlation( img, temp, 500, 500, 1.7f, 15.f);
-//    cout << corr << endl;
-//
-//    Image::ColorImage::write_image_to_bitmap(img, "tagged.bmp");
-
-
-/****************************************************************************************************
-  ***********************************************************************************************/
-//  Image::ColorImage main_image( "test_case_1/a3.bmp");
-//  Image::ColorImage template_image( "test_case_1/001template.bmp");
-//
-//  fp corr;
-//
-//  Image::ColorImage::tag( main_image, template_image, 100, 100, 1.f, 0.f);
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 100, 100, 1.f, 0.f);
-//  std::cout << corr << std::endl;
-//  Image::ColorImage::tag( main_image, template_image, 100, 200, 1.3f, 0.f);
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 100, 200, 1.3f, 0.f);
-//  std::cout << corr << std::endl;
-//  Image::ColorImage::tag( main_image, template_image, 200, 100, 1.f, 20.f);
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 200, 100, 1.f, 20.f);
-//  std::cout << corr << std::endl;
-//  Image::ColorImage::tag( main_image, template_image, 200, 200, 1.2f, 60.f);
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 200, 200, 1.2f, 60.f);
-//  std::cout << corr << std::endl;
-//  Image::ColorImage::tag( main_image, template_image, 200, 300, 1.5f, 60.f);
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 200, 300, 1.4f, 60.f);
-//  std::cout << corr << std::endl;
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 200, 300, 1.4f, 65.f);
-//  std::cout << corr << std::endl;
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 200, 300, 1.4f, 55.f);
-//  std::cout << corr << std::endl;
-//  corr = Image::ColorImage::bc_invariant_correlation( main_image, template_image, 200, 310, 1.1f, 50.f);
-//  std::cout << corr << std::endl;
-//  Image::ColorImage::write_image_to_bitmap(main_image, "tagged.bmp");
-//
-//  return 0;
