@@ -2,7 +2,7 @@
 #define CONTROLDICT_H
 
 /* if true apply gaussian stencil to images ( main and templates) */
-#define FILTER_FLAG 0
+#define GAUSSIAN_FLAG 0
 /* if true rotation and scaling will use bilinear interpolation, else nearest neighbour */
 #define INTERPOLATE_FLAG 0
 #define INTERPOLATE_CORR_FLAG 0

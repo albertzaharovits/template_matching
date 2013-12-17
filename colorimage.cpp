@@ -218,7 +218,7 @@ Image::ColorImage& Image::ColorImage::operator=(const Image::ColorImage& other) 
 
 Image::ColorImage Image::ColorImage::scale_image(float scale_factor) const {
 
-#ifdef _DEBUG
+#if _DEBUG == 1
   assert( scale_factor > 0.f);
 #endif
   Image::ColorImage im( static_cast<unsigned int>( floor(height * scale_factor)),
@@ -894,8 +894,10 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
 
 #if _DEBUG == 1
   /* return 0 if no complete circle fits the image */
-  if( (xc < r) || ((xc+dx+r) >= im.get_width()) || (yc < r) || ((yc+r) >= im.get_height()) )
-    throw 13;
+  assert( xc < r);
+  assert( (xc+dx+r) >= im.get_width());
+  assert( yc < r);
+  assert( (yc+r) >= im.get_width());
 #endif
 
   if( r == 0) {
@@ -986,7 +988,7 @@ Sampling::CircularSamplingData Image::circular_sampling( const Image::ColorImage
 
 void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angle, const Image::ColorImage& im,
                            fp* _l, fp* _a, fp* _b) {
-#ifdef _DEBUG
+#if _DEBUG == 1
   assert( (angle >= 0.f) && (angle <= 360.f));
   assert( r > 0.f);
   assert( ( yc < im.get_height()) && ( xc < im.get_width()));

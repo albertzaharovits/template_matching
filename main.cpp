@@ -53,6 +53,8 @@ bool read_parameters(int argc, char* argv[], Parameters& parameters){
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > third_grade_pixels;
 #endif
 
+  std::vector< std::tuple< int /*template id*/, unsigned int/*x*/, unsigned int/*y*/> > results;
+
 int main(int argc, char* argv[]) {
 
   unsigned int i, j;
@@ -71,17 +73,13 @@ int main(int argc, char* argv[]) {
   if( parameters.nb_threads >= 1)
     omp_set_num_threads(parameters.nb_threads);
 
-#if _DEBUG == 1
-  try {
-#endif
-
   vector< Image::ColorImage> templates;
   /* iterates over the pattern images */
   for(const string& template_name : parameters.template_names) {
 
     /* read a specific pattern image */
     Image::ColorImage template_image( template_name);
-#if FILTER_FLAG == 1
+#if GAUSSIAN_FLAG == 1
     templates.push_back(Image::ColorImage::gaussian_smoother(template_image));
 #else
     templates.push_back(template_image);
@@ -137,7 +135,7 @@ int main(int argc, char* argv[]) {
   }
 
   Image::ColorImage main_image( parameters.main_image_name);
-#if FILTER_FLAG == 1
+#if GAUSSIAN_FLAG == 1
   main_image = std::move( Image::ColorImage::gaussian_smoother(main_image));
 #endif
   const unsigned int min_radius = templates[0].get_radius();
@@ -198,7 +196,6 @@ int main(int argc, char* argv[]) {
         fp S_l = (S_mt - buff_l_S[j]*template_cis[0].cis_l_S/k)
                 / sqrt( (template_cis[0].cis_l_S2 - pow( template_cis[0].cis_l_S, 2)/k)
                         * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
-        //S_l = std::abs( S_l);
         fp cis_corr;
         if( S_l > 4.f || S_l < 0.f) {
           cis_corr = 0.f;
@@ -244,9 +241,8 @@ int main(int argc, char* argv[]) {
           fp S_l = (S_mt - buff_l_S[j]*template_cis[temp_id].cis_l_S/k)
                   / sqrt( (template_cis[temp_id].cis_l_S2 - pow( template_cis[temp_id].cis_l_S, 2)/k)
                           * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
-          S_l = std::abs( S_l);
           fp cis_corr;
-          if( S_l > 4.f) {
+          if( S_l > 4.f || S_l < 0.f) {
             cis_corr = 0.f;
           }
           else {
@@ -272,10 +268,6 @@ int main(int argc, char* argv[]) {
       for( std::vector< std::tuple< unsigned int /* width coord*/, unsigned int /* temp_id */, float /*scale*/> >::iterator it = cis_pix.begin();
            it != cis_pix.end(); ++it) {
 
-        unsigned int t_id = std::get<1>(*it);
-        unsigned int j_coo = std::get<0>(*it);
-        float scale = std::get<2>(*it);
-
         float radius = templates[std::get<1>(*it)].get_radius() * std::get<2>(*it);
 
         Image::radial_sampling( main_image, i, std::get<0>(*it), static_cast<int>(std::floor(radius)) ,
@@ -300,8 +292,6 @@ int main(int argc, char* argv[]) {
           fp S_l  =  (S_ft - S_f*S_t/rotation_step_count) /
               sqrt( (S_f2 - S_f*S_f/rotation_step_count) * (S_t2 - S_t*S_t/rotation_step_count) );
 
-          S_l = std::abs( S_l);
-
           aux[k:(rotation_step_count-k)] = pow( main_ras_a[k:(rotation_step_count-k)] - t_ras_a[0:(rotation_step_count-k)],2)
                                            + pow( main_ras_b[k:(rotation_step_count-k)] - t_ras_b[0:(rotation_step_count-k)],2);
           aux[0:k] = pow( main_ras_a[0:k] - t_ras_a[(rotation_step_count-k):k], 2)
@@ -322,7 +312,7 @@ int main(int argc, char* argv[]) {
         if( aux3[maxi] < th2)
           continue;
 
-        fp best_angle = rotation_start + maxi * rotation_step_delta;
+        fp angle = rotation_start + maxi * rotation_step_delta;
 
 #if SHOW_FILTERS == 1
 #pragma omp critical (second)
@@ -331,26 +321,51 @@ int main(int argc, char* argv[]) {
 }
 #endif
 
+        fp best_scale = std::get<2>(*it);
+        fp best_angle = angle;
         fp corr = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
-                                       i, std::get<0>(*it), std::get<2>(*it), best_angle);
+                                       i, std::get<0>(*it), std::get<2>(*it), angle);
         fp corr2 = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
-                                       i, std::get<0>(*it), std::get<2>(*it), best_angle+1.f);
-        corr = std::max( corr, corr2);
+                                       i, std::get<0>(*it), std::get<2>(*it), angle+1.f);
+        if( corr2 > corr) {
+          best_angle = angle+1.f;
+          corr = corr2;
+        }
+
         corr2 = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
-                                     i, std::get<0>(*it), std::get<2>(*it), best_angle-1.f);
-        corr = std::max( corr, corr2);
+                                     i, std::get<0>(*it), std::get<2>(*it), angle-1.f);
+        if( corr2 > corr) {
+          best_angle = angle-1.f;
+          corr = corr2;
+        }
         corr2 = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
-                                       i, std::get<0>(*it), std::get<2>(*it)+0.1f, best_angle-1.f);
-        corr = std::max( corr, corr2);
+                                       i, std::get<0>(*it), std::get<2>(*it)+0.05f, angle-1.f);
+        if( corr2 > corr) {
+          best_scale = std::get<2>(*it)+0.05f;
+          best_angle = angle-1.f;
+          corr = corr2;
+        }
         corr2 = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
-                                       i, std::get<0>(*it), std::get<2>(*it)+0.1f, best_angle+1.f);
-        corr = std::max( corr, corr2);
+                                       i, std::get<0>(*it), std::get<2>(*it)+0.05f, angle+1.f);
+        if( corr2 > corr) {
+          best_scale = std::get<2>(*it)+0.05f;
+          best_angle = angle+1.f;
+          corr = corr2;
+        }
         corr2 = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
-                                       i, std::get<0>(*it), std::get<2>(*it)-0.1f, best_angle-1.f);
-        corr = std::max( corr, corr2);
+                                       i, std::get<0>(*it), std::get<2>(*it)-0.05f, angle-1.f);
+        if( corr2 > corr) {
+          best_scale = std::get<2>(*it)-0.05f;
+          best_angle = angle-1.f;
+          corr = corr2;
+        }
         corr2 = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
-                                       i, std::get<0>(*it), std::get<2>(*it)-0.1f, best_angle+1.f);
-        corr = std::max( corr, corr2);
+                                       i, std::get<0>(*it), std::get<2>(*it)-0.05f, angle+1.f);
+        if( corr2 > corr) {
+          best_scale = std::get<2>(*it)-0.05f;
+          best_angle = angle+1.f;
+          corr = corr2;
+        }
 
         if( corr < th3)
           continue;
@@ -361,6 +376,18 @@ int main(int argc, char* argv[]) {
         third_grade_pixels.push_back( std::make_tuple( i, std::get<0>(*it)));
 }
 #endif
+
+        int _id = templates[std::get<1>(*it)].get_id();
+        unsigned int dx = templates[std::get<1>(*it)].get_width() / 2;
+        unsigned int dy = templates[std::get<1>(*it)].get_height() / 2;
+        int _y = i + static_cast<int>(round(dx*sin( Utils::D2R * best_angle) - dy*cos( Utils::D2R * best_angle)));
+        int _x = std::get<0>(*it) - static_cast<int>(round(dx*cos( Utils::D2R * best_angle) - dy*sin( Utils::D2R * best_angle)));
+
+#pragma omp critical (res)
+{
+        results.push_back( std::make_tuple(_id, _x, _y));
+}
+
       }
 
     } // i
@@ -407,12 +434,10 @@ int main(int argc, char* argv[]) {
   Image::ColorImage::write_image_to_bitmap( mask_image3, "m3_.bmp");
 #endif
 
-#if _DEBUG == 1
-  }
-  catch (int e) {
-    std::cout<< "An exception occurred. Exception Nr. " << e << '\n';
-  }
-#endif
+  for( std::vector< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/> >::iterator it = results.begin();
+       it != results.end(); ++it)
+    std::cout << std::get<0>(*it) << "\t" << std::get<1>(*it) << "\t" << std::get<2>(*it) << std::endl;
+
 
   return 0;
 }

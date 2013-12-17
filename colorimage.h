@@ -9,7 +9,9 @@
 #include <cmath>
 #include <fstream>
 #include <stdint.h>
+#if _DEBUG == 1
 #include <assert.h>
+#endif
 
 namespace Image {
 
