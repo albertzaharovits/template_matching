@@ -8,10 +8,10 @@ Sampling::CircularSamplingData::CircularSamplingData(uint circle_start, uint cir
   , cis_step(circle_step_delta)
   , cis_n(cis_n) {
 
-  unsigned int _n = ((cis_n * sizeof(float) + MEMALLIGN-1)/MEMALLIGN)*MEMALLIGN/sizeof(float);
-  posix_memalign( (void**)&cis_l, MEMALLIGN, _n*sizeof(float));
-  posix_memalign( (void**)&cis_a, MEMALLIGN, _n*sizeof(float));
-  posix_memalign( (void**)&cis_b, MEMALLIGN, _n*sizeof(float));
+  unsigned int _n = ((cis_n * sizeof(fp) + MEMALLIGN-1)/MEMALLIGN)*MEMALLIGN/sizeof(fp);
+  posix_memalign( (void**)&cis_l, MEMALLIGN, _n*sizeof(fp));
+  posix_memalign( (void**)&cis_a, MEMALLIGN, _n*sizeof(fp));
+  posix_memalign( (void**)&cis_b, MEMALLIGN, _n*sizeof(fp));
   cis_l_S = cis_l_S2 = 0;
 }
 
@@ -51,23 +51,23 @@ Sampling::CircularSamplingData::CircularSamplingData(const Sampling::CircularSam
   , cis_step(other.cis_step)
   , cis_n(other.cis_n) {
 
-    unsigned int _n = ((cis_n * sizeof(float) + MEMALLIGN-1)/MEMALLIGN)*MEMALLIGN/sizeof(float);
+    unsigned int _n = ((cis_n * sizeof(fp) + MEMALLIGN-1)/MEMALLIGN)*MEMALLIGN/sizeof(fp);
     if(other.cis_l != NULL) {
-      posix_memalign( (void**)&cis_l, MEMALLIGN, _n*sizeof(float));
+      posix_memalign( (void**)&cis_l, MEMALLIGN, _n*sizeof(fp));
       std::copy( other.cis_l, other.cis_l+cis_n, cis_l);
     }
     else
       cis_l = NULL;
 
     if(other.cis_a != NULL) {
-      posix_memalign( (void**)&cis_a, MEMALLIGN, _n*sizeof(float));
+      posix_memalign( (void**)&cis_a, MEMALLIGN, _n*sizeof(fp));
       std::copy( other.cis_a, other.cis_a+cis_n, cis_a);
     }
     else
       cis_a = NULL;
 
     if(other.cis_b != NULL) {
-      posix_memalign( (void**)&cis_b, MEMALLIGN, _n*sizeof(float));
+      posix_memalign( (void**)&cis_b, MEMALLIGN, _n*sizeof(fp));
       std::copy( other.cis_b, other.cis_b+cis_n, cis_b);
     }
     else
