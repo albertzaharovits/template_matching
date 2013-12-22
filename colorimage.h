@@ -9,6 +9,7 @@
 #include <cmath>
 #include <fstream>
 #include <stdint.h>
+#include <stdlib.h>
 #if _DEBUG == 1
 #include <assert.h>
 #endif

@@ -58,6 +58,30 @@ namespace Utils {
 
 }
 
+namespace DisjointSet {
+
+  template < typename T >
+  class DsCell {
+    public:
+      DsCell<T>* parent;
+      unsigned int rank;
+      T data;
+      DsCell(const T& data);
+      bool amIparent();
+  };
+
+  template < typename T>
+  void ds_make_set(DsCell<T>& n);
+
+  template < typename T>
+  DsCell<T>& ds_find(DsCell<T>& n);
+
+  template < typename T>
+  DsCell<T>& ds_union(DsCell<T>& a, DsCell<T>& b);
+}
+
+/*** Utils ***/
+
 template< typename T>
 inline
 const T* Utils::Array2d<T>::get_row(unsigned int row) const {
@@ -248,5 +272,53 @@ void Utils::Array2d<T>::set_width(unsigned int width) {
   _width_ = (((width*sizeof(T) + (MEMALLIGN-1))/MEMALLIGN)*MEMALLIGN)/sizeof(T);
 }
 
+/*** DisjointSet ***/
+
+template< typename T>
+DisjointSet::DsCell<T>::DsCell(const T& data) : parent(this) , rank(0), data(data) {}
+
+template < typename T>
+void DisjointSet::ds_make_set(DisjointSet::DsCell<T>& n) {
+  n.parent = &n;
+  n.rank = 0;
+}
+
+template < typename T>
+DisjointSet::DsCell<T>& DisjointSet::ds_find(DisjointSet::DsCell<T>& n) {
+  if( n.parent != &n) {
+    n.parent = &ds_find(*n.parent);
+  }
+  return *n.parent;
+}
+
+template < typename T>
+DisjointSet::DsCell<T>& DisjointSet::ds_union(DisjointSet::DsCell<T>& a, DisjointSet::DsCell<T>& b) {
+
+  DisjointSet::DsCell<T>& aroot = DisjointSet::ds_find( a);
+  DisjointSet::DsCell<T>& broot = DisjointSet::ds_find( b);
+
+  if( &aroot == &broot)
+    return aroot;
+
+  if( aroot.rank < broot.rank) {
+    aroot.parent = &broot;
+    return broot;
+  }
+  else if( aroot.rank > broot.rank) {
+    broot.parent = &aroot;
+    return aroot;
+  }
+  else {
+    broot.parent = &aroot;
+    aroot.rank++;
+    return aroot;
+  }
+}
+
+template < typename T>
+inline
+bool DisjointSet::DsCell<T>::amIparent() {
+  return this==this->parent;
+}
 
 #endif // UTILS_H

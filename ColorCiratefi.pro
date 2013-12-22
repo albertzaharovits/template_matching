@@ -1,5 +1,5 @@
 TEMPLATE = app
-CONFIG += console debug
+#CONFIG += console debug
 CONFIG -= app_bundle
 CONFIG -= qt
 
@@ -7,7 +7,7 @@ SOURCES += main.cpp \
     colorimage.cpp \
     sampling.cpp
 
-QMAKE_CXXFLAGS += -std=c++0x
+QMAKE_CXXFLAGS += -std=c++0x -O3
 QMAKE_CXXFLAGS += -fopenmp
 QMAKE_LFLAGS += -fopenmp
 

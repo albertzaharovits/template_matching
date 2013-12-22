@@ -2,6 +2,7 @@
 #define SAMPLING_H
 
 #include "settings.h"
+#include <stdlib.h>
 
 namespace Sampling {
   class CircularSamplingData {

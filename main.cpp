@@ -9,7 +9,7 @@
 #include "colorimage.h"
 #include "ControlDict.h"
 
-#include "omp.h"
+#include <omp.h>
 
 using namespace std;
 
@@ -47,15 +47,15 @@ bool read_parameters(int argc, char* argv[], Parameters& parameters){
     return true;
 }
 
+int main(int argc, char* argv[]) {
+
 #if SHOW_FILTERS == 1
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > first_grade_pixels;
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > second_grade_pixels;
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > third_grade_pixels;
 #endif
 
-  std::vector< std::tuple< int /*template id*/, unsigned int/*x*/, unsigned int/*y*/> > results;
-
-int main(int argc, char* argv[]) {
+  std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int/*x*/, unsigned int/*y*/, fp/*corr*/> >* > results;
 
   unsigned int i, j;
   Parameters parameters;
@@ -104,7 +104,8 @@ int main(int argc, char* argv[]) {
     cs.id = j;
     cs.scale = scaling_start;
     template_cis.push_back( std::move(cs));
-    for( float s = scaling_start + scaling_step_delta; s <= scaling_end + 0.0003f; s+= scaling_step_delta) {
+    for( unsigned int k=1; k < scaling_step_count; k++) {
+      float s = scaling_start + k*scaling_step_delta;
       Image::ColorImage scaled = temp.scale_image(s);
       cs = Image::circular_sampling( scaled, circle_start, circle_step_delta);
       cs.id = j;
@@ -120,8 +121,8 @@ int main(int argc, char* argv[]) {
   /* radial sampling data */
   Utils::Array2d<fp> template_ras_l( parameters.template_names.size(), rotation_step_count);
   fp *template_ras_l_S, *template_ras_l_S2;
-  posix_memalign( (void**)&template_ras_l_S, MEMALLIGN, rotation_step_count*sizeof(fp));
-  posix_memalign( (void**)&template_ras_l_S2, MEMALLIGN, rotation_step_count*sizeof(fp));
+  posix_memalign( (void**)&template_ras_l_S, MEMALLIGN, parameters.template_names.size()*sizeof(fp));
+  posix_memalign( (void**)&template_ras_l_S2, MEMALLIGN, parameters.template_names.size()*sizeof(fp));
   Utils::Array2d<fp> template_ras_a( parameters.template_names.size(), rotation_step_count);
   Utils::Array2d<fp> template_ras_b( parameters.template_names.size(), rotation_step_count);
   j = 0;
@@ -192,7 +193,9 @@ int main(int argc, char* argv[]) {
       }
 
       for(j=0;j<(highj-lowj);j++) {
-        fp S_mt = __sec_reduce_add( main_cis_l.get_row(j)[0:k] * template_cis[0].cis_l[0:k]);
+        fp *m_cis_l = main_cis_l.get_row(j);
+        fp *t_cis_l = template_cis[0].cis_l;
+        fp S_mt = __sec_reduce_add( m_cis_l[0:k] * t_cis_l[0:k]);
         fp S_l = (S_mt - buff_l_S[j]*template_cis[0].cis_l_S/k)
                 / sqrt( (template_cis[0].cis_l_S2 - pow( template_cis[0].cis_l_S, 2)/k)
                         * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
@@ -201,8 +204,11 @@ int main(int argc, char* argv[]) {
           cis_corr = 0.f;
         }
         else {
-          aux[0:k] = pow( main_cis_a.get_row(j)[0:k] - template_cis[0].cis_a[0:k], 2)
-                      + pow( main_cis_b.get_row(j)[0:k] - template_cis[0].cis_b[0:k], 2);
+          fp *m_cis_a = main_cis_a.get_row(j);
+          fp *m_cis_b = main_cis_b.get_row(j);
+          fp *t_cis_a = template_cis[0].cis_a;
+          fp *t_cis_b = template_cis[0].cis_b;
+          aux[0:k] = pow( m_cis_a[0:k] - t_cis_a[0:k], 2) + pow( m_cis_b[0:k] - t_cis_b[0:k], 2);
           fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
           S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
           cis_corr = pow(S_l, _alpha_) * pow(S_c, _beta_);
@@ -246,8 +252,16 @@ int main(int argc, char* argv[]) {
             cis_corr = 0.f;
           }
           else {
-            aux[0:k] = pow( main_cis_a.get_row(j)[0:k] - template_cis[temp_id].cis_a[0:k], 2)
-                        + pow( main_cis_b.get_row(j)[0:k] - template_cis[temp_id].cis_b[0:k], 2);
+            for( unsigned int x=0; x<k; x++) {
+              aux[x] = pow( main_cis_a.get_row(j)[x] - template_cis[temp_id].cis_a[x], 2)
+                          + pow( main_cis_b.get_row(j)[x] - template_cis[temp_id].cis_b[x], 2);
+              
+            }
+            fp *m_cis_a = main_cis_a.get_row(j);
+            fp *m_cis_b = main_cis_b.get_row(j);
+            fp *t_cis_a = template_cis[temp_id].cis_a;
+            fp *t_cis_b = template_cis[temp_id].cis_b;
+            aux[0:k] = pow( m_cis_a[0:k] - t_cis_a[0:k], 2) + pow( m_cis_b[0:k] - t_cis_b[0:k], 2);
             fp S_c = __sec_reduce_add( sqrt( aux[0:k]));
             S_c = 1.f - (S_c/(200.f*sqrt(2.f)*k));
             cis_corr = pow(S_l, _alpha_) * pow(S_c, _beta_);
@@ -383,9 +397,11 @@ int main(int argc, char* argv[]) {
         int _y = i + static_cast<int>(round(dx*sin( Utils::D2R * best_angle) - dy*cos( Utils::D2R * best_angle)));
         int _x = std::get<0>(*it) - static_cast<int>(round(dx*cos( Utils::D2R * best_angle) - dy*sin( Utils::D2R * best_angle)));
 
+        DisjointSet::DsCell< std::tuple<int,unsigned int,unsigned int,fp> >* dscell =
+            new DisjointSet::DsCell< std::tuple<int,unsigned int,unsigned int,fp> >( std::make_tuple(_id, _x, _y, corr));
 #pragma omp critical (res)
 {
-        results.push_back( std::make_tuple(_id, _x, _y));
+        results.push_back( dscell);
 }
 
       }
@@ -434,9 +450,42 @@ int main(int argc, char* argv[]) {
   Image::ColorImage::write_image_to_bitmap( mask_image3, "m3_.bmp");
 #endif
 
-  for( std::vector< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/> >::iterator it = results.begin();
+  /* SLINK clustering */
+  unsigned int res_n = results.size();
+  fp min_dist = pow( min_radius, 2);
+  for(i=0; i<res_n; i++) {
+    DisjointSet::DsCell < std::tuple< int, unsigned int, unsigned int, fp> >& ci = *results[i];
+    for(j=i+1; j<res_n; j++) {
+      DisjointSet::DsCell < std::tuple< int, unsigned int, unsigned int, fp> >& cj = *results[j];
+
+      fp dist = pow( static_cast<int>(std::get<1>(ci.data)) - static_cast<int>(std::get<1>(cj.data)), 2) +
+                pow( static_cast<int>(std::get<2>(ci.data)) - static_cast<int>(std::get<2>(cj.data)), 2);
+      if( dist < min_dist)
+        DisjointSet::ds_union( ci, cj);
+    }
+  }
+
+  /* move best correlation pixel to cluster parent */
+  std::vector< DisjointSet::DsCell< std::tuple< int, unsigned int, unsigned int, fp> >* > best_results;
+  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
+       it != results.end(); ++it) {
+    DisjointSet::DsCell< std::tuple< int, unsigned int, unsigned int, fp> >& root = DisjointSet::ds_find(*(*it));
+    if( (*it) == &root ) {
+      best_results.push_back(*it);
+    }
+    else if( std::get<3>((*it)->data) > std::get<3>(root.parent->data) ) {
+      std::swap( (*it)->data , root.parent->data);
+    }
+  }
+
+  /* print cluster parents only */
+  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/, fp/*corr*/> >* >::iterator it = best_results.begin();
+       it != best_results.end(); ++it)
+    std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
+
+  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
        it != results.end(); ++it)
-    std::cout << std::get<0>(*it) << "\t" << std::get<1>(*it) << "\t" << std::get<2>(*it) << std::endl;
+    delete (*it);
 
 
   return 0;

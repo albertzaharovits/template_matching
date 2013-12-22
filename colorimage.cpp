@@ -226,18 +226,20 @@ Image::ColorImage Image::ColorImage::scale_image(float scale_factor) const {
 
   const fp step = 1.0/static_cast<fp>( scale_factor);
 
-  fp y = 0.0;
   for( unsigned int i = 0; i < im.height; i++) {
+    fp y = i*step;
 #if INTERPOLATE_FLAG == 1
     unsigned int y0 = static_cast<unsigned int>( floor(y));
     unsigned int y1 = min(y0 + 1, height - 1);
+#else
+    unsigned int y0 = min( static_cast<unsigned int>( round(y)), height-1);
 #endif
-#pragma simd assert
+#pragma simd
     for( unsigned int j = 0; j < im.width; j++) {
       fp x = j * step;
 #if INTERPOLATE_FLAG == 1
       unsigned int x0 = static_cast<unsigned int>( floor(x));
-      unsigned int x1 = x0 + 1;
+      unsigned int x1 = min(x0 + 1, width-1);
       fp f00 = L(y0, x0);
       fp f01 = L(y0, x1);
       fp f10 = L(y1, x0);
@@ -257,16 +259,12 @@ Image::ColorImage Image::ColorImage::scale_image(float scale_factor) const {
       im.B(i,j) = static_cast<float>( (y-y0) * ((x-x0)*f11 + (x1-x)*f10) +
                                       (y1-y) * ((x-x0)*f01 + (x1-x)*f00) );
 #else
-      im.L(i,j) = static_cast<float>( L( static_cast<unsigned int>( round( y)),
-                                         static_cast<unsigned int>( round( x))));
-      im.A(i,j) = static_cast<float>( A( static_cast<unsigned int>( round( y)),
-                                         static_cast<unsigned int>( round( x))));
-      im.B(i,j) = static_cast<float>( B( static_cast<unsigned int>( round( y)),
-                                         static_cast<unsigned int>( round( x))));
+      unsigned int x0 = min( static_cast<unsigned int>( round(x)), width-1);
+      im.L(i,j) = L( y0, x0);
+      im.A(i,j) = A( y0, x0);
+      im.B(i,j) = B( y0, x0);
 #endif
     }
-
-    y += step;
   }
 
   return im;
@@ -286,7 +284,7 @@ Image::ColorImage Image::ColorImage::rotate_image(float angle) const {
   for( unsigned int i=0; i < height; ++i) {
 
     fp yp = static_cast<fp>( i) - yc;
-#pragma simd assert
+#pragma simd
     for( unsigned int j=0; j < width; ++j) {
 
       fp xp = static_cast<fp>( j) - xc;
@@ -319,9 +317,11 @@ Image::ColorImage Image::ColorImage::rotate_image(float angle) const {
         im.B( i, j) = static_cast<float>( (y-y0) * ((x-x0)*f11 + (x1-x)*f10) +
                                           (y1-y) * ((x-x0)*f01 + (x1-x)*f00) );
 #else
-        im.L( i, j) = L( static_cast< unsigned int>( round(y)), static_cast< unsigned int>( round(x)));
-        im.A( i, j) = A( static_cast< unsigned int>( round(y)), static_cast< unsigned int>( round(x)));
-        im.B( i, j) = B( static_cast< unsigned int>( round(y)), static_cast< unsigned int>( round(x)));
+        unsigned int y0 = static_cast< unsigned int>( round(y));
+        unsigned int x0 = static_cast< unsigned int>( round(x));
+        im.L( i, j) = L( y0, x0);
+        im.A( i, j) = A( y0, x0);
+        im.B( i, j) = B( y0, x0);
 #endif
       }
       else
@@ -457,8 +457,7 @@ Image::ColorImage Image::ColorImage::gaussian_smoother(const Image::ColorImage& 
 
   Image::ColorImage smooth(im.height, im.width, im.id);
 
-  static const int filter[5][5] =
-  {
+  static const int filter[5][5] = {
     1,  4,  7,  4, 1,
     4, 16, 26, 16, 4,
     7, 26, 41, 26, 7,
@@ -474,7 +473,7 @@ Image::ColorImage Image::ColorImage::gaussian_smoother(const Image::ColorImage& 
   const unsigned int _j = im.width-2;
 
   for( unsigned int i=2; i<_i; ++i) {
-#pragma simd assert
+#pragma simd
     for( unsigned int j=2; j<_j; ++j) {
       float sum = 0.f;
 
@@ -513,14 +512,14 @@ Image::ColorImage Image::ColorImage::gaussian_smoother(const Image::ColorImage& 
   }
 
   for( unsigned int i=0; i<2; ++i) {
-#pragma simd assert
+#pragma simd
     for( unsigned int j=0; j<(_j+2); ++j) {
       smooth.L(i, j) = im.L(i, j);
     }
   }
 
   for( unsigned int i=(im.height-2); i<im.height; ++i) {
-#pragma simd assert
+#pragma simd
     for( unsigned int j=0; j<(_j+2); ++j) {
       smooth.L(i, j) = im.L(i, j);
     }
@@ -694,7 +693,7 @@ fp Image::ColorImage::bc_invariant_correlation( const Image::ColorImage& main /*
     const unsigned int y1 = min( y0 + 1, temp.height - 1);
 #endif
 
-#pragma simd assert reduction(+:count) reduction(+:f_sum) reduction(+:f_sum2) reduction(+:t_sum) reduction(+:t_sum2) reduction(+:ft_sum) reduction(+:S_c)
+//#pragma simd assert reduction(+:count) reduction(+:f_sum) reduction(+:f_sum2) reduction(+:t_sum) reduction(+:t_sum2) reduction(+:ft_sum) reduction(+:S_c)
     for( unsigned int j = 0; j < width; ++j) {
 
       fp x = j*step;
@@ -822,7 +821,7 @@ void Image::ColorImage::tag( Image::ColorImage& main, const Image::ColorImage& t
     const unsigned int y1 = min( y0 + 1, temp.height - 1);
 #endif
 
-#pragma simd assert
+//#pragma simd assert
     for( unsigned int j = 0; j < width; ++j) {
 
       fp x = j*step;

@@ -21,7 +21,7 @@ static const float _beta_ = 0.2f;
 static const float scaling_step_delta = 0.1f;
 
 static const unsigned int circle_start = 0;
-static const unsigned int circle_step_delta = 2;
+static const unsigned int circle_step_delta = 3;
 /* threshold for first grade candidate pixels */
 static const float th1 = 0.95f;
 
