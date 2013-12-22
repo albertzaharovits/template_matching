@@ -234,7 +234,7 @@ Image::ColorImage Image::ColorImage::scale_image(float scale_factor) const {
 #else
     unsigned int y0 = min( static_cast<unsigned int>( round(y)), height-1);
 #endif
-#pragma simd
+//#pragma simd
     for( unsigned int j = 0; j < im.width; j++) {
       fp x = j * step;
 #if INTERPOLATE_FLAG == 1
@@ -890,6 +890,7 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
   unsigned int count = 0;
   float p;
   unsigned int x, y;
+  //fp *aux;
 
 #if _DEBUG == 1
   /* return 0 if no complete circle fits the image */
@@ -901,18 +902,97 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
 
   if( r == 0) {
     count = 1;
+//    aux = (im.l + yc*im._width_ + xc);
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _l[i] = aux[i];
     _l[0:dx] = (im.l + yc*im._width_)[xc:dx];
+//    aux = (im.a + yc*im._width_ + xc);
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _a[i] = aux[i];
     _a[0:dx] = (im.a + yc*im._width_)[xc:dx];
+//    aux = (im.b + yc*im._width_ + xc);
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _b[i] = aux[i];
     _b[0:dx] = (im.b + yc*im._width_)[xc:dx];
   }
   else {
     x = 0;
     y = r;
     /* cross-tip points */
+//    aux = im.l + (r+yc)*im._width_ + xc;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _l[i] = aux[i];
+//    aux = im.l + (-r+yc)*im._width_ + xc;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _l[i] += aux[i];
+//    aux = im.l + yc*im._width_ + xc+r;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _l[i] += aux[i];
+//    aux = im.l + yc*im._width_ + xc-r;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _l[i] += aux[i];
+//    for(unsigned int i=0;i<dx;i++) {
+//      _l[i] = (im.l + (r+yc)*im._width_ + xc)[i];
+//      _l[i] += (im.l + (-r+yc)*im._width_ + xc)[i];
+//      _l[i] += (im.l + yc*im._width_ + xc + r)[i];
+//      _l[i] += (im.l + yc*im._width_ + xc - r)[i];
+//    }
     _l[0:dx] = (im.l + (r+yc)*im._width_)[xc:dx] + (im.l + (-r+yc)*im._width_)[xc:dx]
                + (im.l + yc*im._width_)[xc+r:dx] + (im.l + yc*im._width_)[xc-r:dx];
+
+//    aux = im.a + (r+yc)*im._width_ + xc;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _a[i] = aux[i];
+//    aux = im.a + (-r+yc)*im._width_ + xc;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _a[i] += aux[i];
+//    aux = im.a + yc*im._width_ + xc+r;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _a[i] += aux[i];
+//    aux = im.a + yc*im._width_ + xc-r;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _a[i] += aux[i];
+//    for(unsigned int i=0;i<dx;i++) {
+//      _a[i] = (im.a + (r+yc)*im._width_ + xc)[i];
+//      _a[i] += (im.a + (-r+yc)*im._width_ + xc)[i];
+//      _a[i] += (im.a + yc*im._width_ + xc + r)[i];
+//      _a[i] += (im.a + yc*im._width_ + xc - r)[i];
+//    }
     _a[0:dx] = (im.a + (r+yc)*im._width_)[xc:dx] + (im.a + (-r+yc)*im._width_)[xc:dx]
                + (im.a + yc*im._width_)[xc+r:dx] + (im.a + yc*im._width_)[xc-r:dx];
+//    aux = im.b + (r+yc)*im._width_ + xc;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _b[i] = aux[i];
+//    aux = im.b + (-r+yc)*im._width_ + xc;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _b[i] += aux[i];
+//    aux = im.b + yc*im._width_ + xc+r;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _b[i] += aux[i];
+//    aux = im.b + yc*im._width_ + xc-r;
+//#pragma simd assert
+//    for(unsigned int i=0;i<dx;i++)
+//      _b[i] += aux[i];
+//    for(unsigned int i=0;i<dx;i++) {
+//      _b[i] = (im.b + (r+yc)*im._width_ + xc)[i];
+//      _b[i] += (im.b + (-r+yc)*im._width_ + xc)[i];
+//      _b[i] += (im.b + yc*im._width_ + xc + r)[i];
+//      _b[i] += (im.b + yc*im._width_ + xc - r)[i];
+//    }
     _b[0:dx] = (im.b + (r+yc)*im._width_)[xc:dx] + (im.b + (-r+yc)*im._width_)[xc:dx]
                + (im.b + yc*im._width_)[xc+r:dx] + (im.b + yc*im._width_)[xc-r:dx];
     count = 4;
@@ -927,10 +1007,79 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
 
       if( x >= y) {
         if( x == y) {
+//          aux = (im.l + (yc-y)*im._width_ + xc-x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _l[i] += aux[i];
+//          aux = (im.l + (yc-y)*im._width_ + xc+x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _l[i] += aux[i];
+//          aux = (im.l + (yc+y)*im._width_ + xc+x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _l[i] += aux[i];
+//          aux = (im.l + (yc+y)*im._width_ + xc-x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _l[i] += aux[i];
+
+          //for(unsigned int i=0;i<dx;i++) {
+          //  _l[i] += (im.l + (yc-y)*im._width_ + xc-x)[i];
+          //  _l[i] += (im.l + (yc-y)*im._width_ + xc+x)[i];
+          //  _l[i] += (im.l + (yc+y)*im._width_ + xc+x)[i];
+          //  _l[i] += (im.l + (yc+y)*im._width_ + xc-x)[i];
+          //}
           _l[0:dx] += (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
                      + (im.l + (yc+y)*im._width_)[xc+x:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
+//          aux = (im.a + (yc-y)*im._width_ + xc-x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _a[i] += aux[i];
+//          aux = (im.a + (yc-y)*im._width_ + xc+x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _a[i] += aux[i];
+//          aux = (im.a + (yc+y)*im._width_ + xc+x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _a[i] += aux[i];
+//          aux = (im.a + (yc+y)*im._width_ + xc-x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _a[i] += aux[i];
+
+          //for(unsigned int i=0;i<dx;i++) {
+          //  _a[i] += (im.a + (yc-y)*im._width_ + xc-x)[i];
+          //  _a[i] += (im.a + (yc-y)*im._width_ + xc+x)[i];
+          //  _a[i] += (im.a + (yc+y)*im._width_ + xc+x)[i];
+          //  _a[i] += (im.a + (yc+y)*im._width_ + xc-x)[i];
+          //}
           _a[0:dx] += (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
                      + (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
+
+//          aux = (im.b + (yc-y)*im._width_ + xc-x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _b[i] += aux[i];
+//          aux = (im.b + (yc-y)*im._width_ + xc+x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _b[i] += aux[i];
+//          aux = (im.b + (yc+y)*im._width_ + xc+x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _b[i] += aux[i];
+//          aux = (im.b + (yc+y)*im._width_ + xc-x);
+//#pragma simd assert
+//          for(unsigned int i=0;i<dx;i++)
+//            _b[i] += aux[i];
+          //for(unsigned int i=0;i<dx;i++) {
+          //  _b[i] += (im.b + (yc-y)*im._width_ + xc-x)[i];
+          //  _b[i] += (im.b + (yc-y)*im._width_ + xc+x)[i];
+          //  _b[i] += (im.b + (yc+y)*im._width_ + xc+x)[i];
+          //  _b[i] += (im.b + (yc+y)*im._width_ + xc-x)[i];
+          //}
           _b[0:dx] += (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
                      + (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+y)*im._width_)[xc-x:dx];
           count += 4;
@@ -939,14 +1088,140 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
       }
 
       /*symmetry points in the other seven octants*/
+//      aux = (im.l + (yc+y)*im._width_ + xc+x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+//      aux = (im.l + (yc+x)*im._width_ + xc+y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+//      aux = (im.l + (yc-x)*im._width_ + xc+y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+//      aux = (im.l + (yc-y)*im._width_ + xc+x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+//      aux = (im.l + (yc-y)*im._width_ + xc-x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+//      aux = (im.l + (yc-x)*im._width_ + xc-y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+//      aux = (im.l + (yc+x)*im._width_ + xc-y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+//      aux = (im.l + (yc+y)*im._width_ + xc-x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _l[i] += aux[i];
+      //for(unsigned int i=0;i<dx;i++) {
+      //  _l[i] += (im.l + (yc+y)*im._width_ + xc+x)[i];
+      //  _l[i] += (im.l + (yc+x)*im._width_ + xc+y)[i];
+      //  _l[i] += (im.l + (yc-x)*im._width_ + xc+y)[i];
+      //  _l[i] += (im.l + (yc-y)*im._width_ + xc+x)[i];
+      //  _l[i] += (im.l + (yc-y)*im._width_ + xc-x)[i];
+      //  _l[i] += (im.l + (yc-x)*im._width_ + xc-y)[i];
+      //  _l[i] += (im.l + (yc+x)*im._width_ + xc-y)[i];
+      //  _l[i] += (im.l + (yc+y)*im._width_ + xc-x)[i];
+      //}
       _l[0:dx] += (im.l + (yc+y)*im._width_)[xc+x:dx] + (im.l + (yc+x)*im._width_)[xc+y:dx]
                   + (im.l + (yc-x)*im._width_)[xc+y:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
                   + (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-x)*im._width_)[xc-y:dx]
                   + (im.l + (yc+x)*im._width_)[xc-y:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
+//      aux = (im.a + (yc+y)*im._width_ + xc+x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+//      aux = (im.a + (yc+x)*im._width_ + xc+y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+//      aux = (im.a + (yc-x)*im._width_ + xc+y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+//      aux = (im.a + (yc-y)*im._width_ + xc+x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+//      aux = (im.a + (yc-y)*im._width_ + xc-x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+//      aux = (im.a + (yc-x)*im._width_ + xc-y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+//      aux = (im.a + (yc+x)*im._width_ + xc-y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+//      aux = (im.a + (yc+y)*im._width_ + xc-x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _a[i] += aux[i];
+      //for(unsigned int i=0;i<dx;i++) {
+      //  _a[i] += (im.a + (yc+y)*im._width_ + xc+x)[i];
+      //  _a[i] += (im.a + (yc+x)*im._width_ + xc+y)[i];
+      //  _a[i] += (im.a + (yc-x)*im._width_ + xc+y)[i];
+      //  _a[i] += (im.a + (yc-y)*im._width_ + xc+x)[i];
+      //  _a[i] += (im.a + (yc-y)*im._width_ + xc-x)[i];
+      //  _a[i] += (im.a + (yc-x)*im._width_ + xc-y)[i];
+      //  _a[i] += (im.a + (yc+x)*im._width_ + xc-y)[i];
+      //  _a[i] += (im.a + (yc+y)*im._width_ + xc-x)[i];
+      //}
       _a[0:dx] += (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+x)*im._width_)[xc+y:dx]
                   + (im.a + (yc-x)*im._width_)[xc+y:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
                   + (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-x)*im._width_)[xc-y:dx]
                   + (im.a + (yc+x)*im._width_)[xc-y:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
+//      aux = (im.b + (yc+y)*im._width_ + xc+x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+//      aux = (im.b + (yc+x)*im._width_ + xc+y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+//      aux = (im.b + (yc-x)*im._width_ + xc+y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+//      aux = (im.b + (yc-y)*im._width_ + xc+x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+//      aux = (im.b + (yc-y)*im._width_ + xc-x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+//      aux = (im.b + (yc-x)*im._width_ + xc-y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+//      aux = (im.b + (yc+x)*im._width_ + xc-y);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+//      aux = (im.b + (yc+y)*im._width_ + xc-x);
+//#pragma simd assert
+//      for(unsigned int i=0;i<dx;i++)
+//        _b[i] += aux[i];
+      //for(unsigned int i=0;i<dx;i++) {
+      //  _b[i] += (im.b + (yc+y)*im._width_ + xc+x)[i];
+      //  _b[i] += (im.b + (yc+x)*im._width_ + xc+y)[i];
+      //  _b[i] += (im.b + (yc-x)*im._width_ + xc+y)[i];
+      //  _b[i] += (im.b + (yc-y)*im._width_ + xc+x)[i];
+      //  _b[i] += (im.b + (yc-y)*im._width_ + xc-x)[i];
+      //  _b[i] += (im.b + (yc-x)*im._width_ + xc-y)[i];
+      //  _b[i] += (im.b + (yc+x)*im._width_ + xc-y)[i];
+      //  _b[i] += (im.b + (yc+y)*im._width_ + xc-x)[i];
+      //}
       _b[0:dx] += (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+x)*im._width_)[xc+y:dx]
                   + (im.b + (yc-x)*im._width_)[xc+y:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
                   + (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-x)*im._width_)[xc-y:dx]
@@ -955,8 +1230,20 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
     }
   }
 
+//#pragma simd assert
+//  for(unsigned int i=0;i<dx;i++) {
+//    _l[i] /= count;
+//  }
   _l[0:dx] /= count;
+//#pragma simd assert
+//  for(unsigned int i=0;i<dx;i++) {
+//    _a[i] /= count;
+//  }
   _a[0:dx] /= count;
+//#pragma simd assert
+//  for(unsigned int i=0;i<dx;i++) {
+//    _b[i] /= count;
+//  }
   _b[0:dx] /= count;
 }
 

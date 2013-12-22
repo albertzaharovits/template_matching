@@ -40,8 +40,3 @@ static const float th2 = 0.5f;
 static const float th3 = 0.95f;
 
 #endif // CONTROLDICT_H
-
-// settings or q02
-//static const float th3 = 0.95f;
-//static const float th2 = 0.8f;
-//static const float th1 = 0.95f;

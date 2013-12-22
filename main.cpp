@@ -2,6 +2,7 @@
 #include <list>
 #include <vector>
 #include <algorithm>
+#include <tuple>
 #include <cmath>
 
 #include "sampling.h"
@@ -55,7 +56,7 @@ int main(int argc, char* argv[]) {
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > third_grade_pixels;
 #endif
 
-  std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int/*x*/, unsigned int/*y*/, fp/*corr*/> >* > results;
+  std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int/*x*/, int/*y*/, fp/*corr*/> >* > results;
 
   unsigned int i, j;
   Parameters parameters;
@@ -243,7 +244,9 @@ int main(int argc, char* argv[]) {
         }
 
         for(j=off;j<(highj-lowj-off);j++) {
-          fp S_mt = __sec_reduce_add( main_cis_l.get_row(j)[0:k] * template_cis[temp_id].cis_l[0:k]);
+          fp *m_cis_l = main_cis_l.get_row(j);
+          fp *t_cis_l = template_cis[temp_id].cis_l;
+          fp S_mt = __sec_reduce_add( m_cis_l[0:k] * t_cis_l[0:k]);
           fp S_l = (S_mt - buff_l_S[j]*template_cis[temp_id].cis_l_S/k)
                   / sqrt( (template_cis[temp_id].cis_l_S2 - pow( template_cis[temp_id].cis_l_S, 2)/k)
                           * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
@@ -252,11 +255,6 @@ int main(int argc, char* argv[]) {
             cis_corr = 0.f;
           }
           else {
-            for( unsigned int x=0; x<k; x++) {
-              aux[x] = pow( main_cis_a.get_row(j)[x] - template_cis[temp_id].cis_a[x], 2)
-                          + pow( main_cis_b.get_row(j)[x] - template_cis[temp_id].cis_b[x], 2);
-              
-            }
             fp *m_cis_a = main_cis_a.get_row(j);
             fp *m_cis_b = main_cis_b.get_row(j);
             fp *t_cis_a = template_cis[temp_id].cis_a;
@@ -397,8 +395,8 @@ int main(int argc, char* argv[]) {
         int _y = i + static_cast<int>(round(dx*sin( Utils::D2R * best_angle) - dy*cos( Utils::D2R * best_angle)));
         int _x = std::get<0>(*it) - static_cast<int>(round(dx*cos( Utils::D2R * best_angle) - dy*sin( Utils::D2R * best_angle)));
 
-        DisjointSet::DsCell< std::tuple<int,unsigned int,unsigned int,fp> >* dscell =
-            new DisjointSet::DsCell< std::tuple<int,unsigned int,unsigned int,fp> >( std::make_tuple(_id, _x, _y, corr));
+        DisjointSet::DsCell< std::tuple<int,int,int,fp> >* dscell =
+            new DisjointSet::DsCell< std::tuple<int,int,int,fp> >( std::make_tuple(_id, _x, _y, corr));
 #pragma omp critical (res)
 {
         results.push_back( dscell);
@@ -454,22 +452,22 @@ int main(int argc, char* argv[]) {
   unsigned int res_n = results.size();
   fp min_dist = pow( min_radius, 2);
   for(i=0; i<res_n; i++) {
-    DisjointSet::DsCell < std::tuple< int, unsigned int, unsigned int, fp> >& ci = *results[i];
+    DisjointSet::DsCell < std::tuple< int, int, int, fp> >& ci = *results[i];
     for(j=i+1; j<res_n; j++) {
-      DisjointSet::DsCell < std::tuple< int, unsigned int, unsigned int, fp> >& cj = *results[j];
+      DisjointSet::DsCell < std::tuple< int, int, int, fp> >& cj = *results[j];
 
-      fp dist = pow( static_cast<int>(std::get<1>(ci.data)) - static_cast<int>(std::get<1>(cj.data)), 2) +
-                pow( static_cast<int>(std::get<2>(ci.data)) - static_cast<int>(std::get<2>(cj.data)), 2);
+      fp dist = pow( std::get<1>(ci.data) - std::get<1>(cj.data), 2) +
+                pow( std::get<2>(ci.data) - std::get<2>(cj.data), 2);
       if( dist < min_dist)
         DisjointSet::ds_union( ci, cj);
     }
   }
 
   /* move best correlation pixel to cluster parent */
-  std::vector< DisjointSet::DsCell< std::tuple< int, unsigned int, unsigned int, fp> >* > best_results;
-  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
+  std::vector< DisjointSet::DsCell< std::tuple< int, int, int, fp> >* > best_results;
+  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
        it != results.end(); ++it) {
-    DisjointSet::DsCell< std::tuple< int, unsigned int, unsigned int, fp> >& root = DisjointSet::ds_find(*(*it));
+    DisjointSet::DsCell< std::tuple< int, int, int, fp> >& root = DisjointSet::ds_find(*(*it));
     if( (*it) == &root ) {
       best_results.push_back(*it);
     }
@@ -479,11 +477,11 @@ int main(int argc, char* argv[]) {
   }
 
   /* print cluster parents only */
-  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/, fp/*corr*/> >* >::iterator it = best_results.begin();
+  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* >::iterator it = best_results.begin();
        it != best_results.end(); ++it)
     std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
 
-  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, unsigned int /*x*/, unsigned int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
+  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
        it != results.end(); ++it)
     delete (*it);
 

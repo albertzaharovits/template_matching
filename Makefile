@@ -11,8 +11,8 @@
 CC            = icc
 CXX           = icpc
 DEFINES       = -DQT_WEBKIT
-CFLAGS        = -fopenmp -O3 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES)
-CXXFLAGS      = -fopenmp -std=c++0x -O3 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES)
+CFLAGS        = -fopenmp -O3 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
+CXXFLAGS      = -fopenmp -std=c++11 -O3 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
 INCPATH       = -I/usr/share/qt4/mkspecs/linux-icc-64 -I.
 LINK          = icpc
 LFLAGS        = -fopenmp
