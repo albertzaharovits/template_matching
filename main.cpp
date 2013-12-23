@@ -14,6 +14,8 @@
 
 using namespace std;
 
+typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* pDsCell;
+
 /*!
  *\struct Parameters
  *\brief This structure holds the application parameters
@@ -56,7 +58,7 @@ int main(int argc, char* argv[]) {
   std::vector< std::tuple< unsigned int/*y*/, unsigned int/*x*/> > third_grade_pixels;
 #endif
 
-  std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int/*x*/, int/*y*/, fp/*corr*/> >* > results;
+  std::vector< pDsCell > results;
 
   unsigned int i, j;
   Parameters parameters;
@@ -81,7 +83,7 @@ int main(int argc, char* argv[]) {
     /* read a specific pattern image */
     Image::ColorImage template_image( template_name);
 #if GAUSSIAN_FLAG == 1
-    templates.push_back(Image::ColorImage::gaussian_smoother(template_image));
+    templates.push_back(Image::ColorImage::gaussian_smoother(std::move(template_image)));
 #else
     templates.push_back(std::move(template_image));
 #endif
@@ -455,39 +457,35 @@ int main(int argc, char* argv[]) {
   unsigned int res_n = results.size();
   fp min_dist = pow( min_radius, 2);
   for(i=0; i<res_n; i++) {
-    DisjointSet::DsCell < std::tuple< int, int, int, fp> >& ci = *results[i];
+    pDsCell ci = results[i];
     for(j=i+1; j<res_n; j++) {
-      DisjointSet::DsCell < std::tuple< int, int, int, fp> >& cj = *results[j];
+      pDsCell cj = results[j];
 
-      fp dist = pow( std::get<1>(ci.data) - std::get<1>(cj.data), 2) +
-                pow( std::get<2>(ci.data) - std::get<2>(cj.data), 2);
+      fp dist = pow( std::get<1>(ci->data) - std::get<1>(cj->data), 2) +
+                pow( std::get<2>(ci->data) - std::get<2>(cj->data), 2);
       if( dist < min_dist)
-        DisjointSet::ds_union( ci, cj);
+        DisjointSet::ds_union( *ci, *cj);
     }
   }
 
   /* move best correlation pixel to cluster parent */
-  std::vector< DisjointSet::DsCell< std::tuple< int, int, int, fp> >* > best_results;
-  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
-       it != results.end(); ++it) {
-    DisjointSet::DsCell< std::tuple< int, int, int, fp> >& root = DisjointSet::ds_find(*(*it));
-    if( (*it) == &root ) {
+  std::vector< pDsCell > best_results;
+  for( std::vector< pDsCell >::iterator it = results.begin(); it != results.end(); ++it) {
+    pDsCell root = &DisjointSet::ds_find(*(*it));
+    if( (*it) == root ) {
       best_results.push_back(*it);
     }
-    else if( std::get<3>((*it)->data) > std::get<3>(root.parent->data) ) {
-      std::swap( (*it)->data , root.parent->data);
+    else if( std::get<3>((*it)->data) > std::get<3>(root->data) ) {
+      std::swap( (*it)->data , root->data);
     }
   }
 
   /* print cluster parents only */
-  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* >::iterator it = best_results.begin();
-       it != best_results.end(); ++it)
+  for( std::vector< pDsCell >::iterator it = best_results.begin(); it != best_results.end(); ++it)
     std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
 
-  for( std::vector< DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* >::iterator it = results.begin();
-       it != results.end(); ++it)
+  for( std::vector< pDsCell >::iterator it = results.begin(); it != results.end(); ++it)
     delete (*it);
-
 
   return 0;
 }
