@@ -24,6 +24,7 @@ namespace Sampling {
         ~CircularSamplingData();
         CircularSamplingData(CircularSamplingData&& other);
         CircularSamplingData& operator=(CircularSamplingData&& other);
+        CircularSamplingData& operator=(const CircularSamplingData& other);
         CircularSamplingData(const CircularSamplingData& other);
 
         bool operator<(const CircularSamplingData& other) const;
@@ -34,5 +35,6 @@ inline
 bool Sampling::CircularSamplingData::operator<(const Sampling::CircularSamplingData& other) const {
   return cis_n < other.cis_n;
 }
+
 
 #endif // SAMPLING_H

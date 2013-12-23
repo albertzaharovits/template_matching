@@ -162,26 +162,23 @@ Image::ColorImage::ColorImage(const Image::ColorImage& other)
 
     unsigned int sz = height * _width_;
 
-  if( other.l != NULL) {
-    posix_memalign( (void**)&l, MEMALLIGN, height*_width_*sizeof(float));
-    std::copy( other.l, other.l+sz, l);
-  }
-  else
     l = NULL;
+    if( other.l != NULL) {
+      posix_memalign( (void**)&l, MEMALLIGN, height*_width_*sizeof(float));
+      std::copy( other.l, other.l+sz, l);
+    }
 
-  if( other.a != NULL) {
-    posix_memalign( (void**)&a, MEMALLIGN, height*_width_*sizeof(float));
-    std::copy( other.a, other.a+sz, a);
-  }
-  else
     a = NULL;
+    if( other.a != NULL) {
+      posix_memalign( (void**)&a, MEMALLIGN, height*_width_*sizeof(float));
+      std::copy( other.a, other.a+sz, a);
+    }
 
-  if( other.b != NULL) {
-    posix_memalign( (void**)&b, MEMALLIGN, height*_width_*sizeof(float));
-    std::copy( other.b, other.b+sz, b);
-  }
-  else
     b = NULL;
+    if( other.b != NULL) {
+      posix_memalign( (void**)&b, MEMALLIGN, height*_width_*sizeof(float));
+      std::copy( other.b, other.b+sz, b);
+    }
 }
 
 Image::ColorImage& Image::ColorImage::operator=(const Image::ColorImage& other) {

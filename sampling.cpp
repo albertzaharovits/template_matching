@@ -77,6 +77,38 @@ Sampling::CircularSamplingData::CircularSamplingData(const Sampling::CircularSam
     cis_l_S2 = other.cis_l_S2;
 }
 
+Sampling::CircularSamplingData& Sampling::CircularSamplingData::operator=(const Sampling::CircularSamplingData& other) {
+  if( (this!=&other) ) {
+    id = other.id;
+    scale = other.scale;
+    cis_start = other.cis_start;
+    cis_step = other.cis_step;
+    if( !cis_l || !cis_a || !cis_b || cis_n != other.cis_n ) {
+      if( cis_l != NULL)
+        free(cis_l);
+      if( cis_a != NULL)
+        free(cis_a);
+      if( cis_b != NULL)
+        free(cis_b);
+
+      cis_n = other.cis_n;
+
+      unsigned int _n = ((cis_n * sizeof(fp) + MEMALLIGN-1)/MEMALLIGN)*MEMALLIGN/sizeof(fp);
+      posix_memalign( (void**)&cis_l, MEMALLIGN, _n*sizeof(float));
+      posix_memalign( (void**)&cis_a, MEMALLIGN, _n*sizeof(float));
+      posix_memalign( (void**)&cis_b, MEMALLIGN, _n*sizeof(float));
+    }
+
+    std::copy( other.cis_l , other.cis_l + cis_n, cis_l);
+    std::copy( other.cis_a , other.cis_a + cis_n, cis_a);
+    std::copy( other.cis_b , other.cis_b + cis_n, cis_b);
+    cis_l_S = other.cis_l_S;
+    cis_l_S2 = other.cis_l_S2;
+  }
+
+  return *this;
+}
+
 Sampling::CircularSamplingData& Sampling::CircularSamplingData::operator=(Sampling::CircularSamplingData&& other) {
   if( (this!=&other) ) {
     if( cis_l != NULL)

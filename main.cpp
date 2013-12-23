@@ -10,7 +10,7 @@
 #include "colorimage.h"
 #include "ControlDict.h"
 
-#include <omp.h>
+//#include <omp.h>
 
 using namespace std;
 
@@ -71,8 +71,8 @@ int main(int argc, char* argv[]) {
       return -1;
   }
 
-  if( parameters.nb_threads >= 1)
-    omp_set_num_threads(parameters.nb_threads);
+//  if( parameters.nb_threads >= 1)
+//    omp_set_num_threads(parameters.nb_threads);
 
   vector< Image::ColorImage> templates;
   /* iterates over the pattern images */
@@ -83,11 +83,11 @@ int main(int argc, char* argv[]) {
 #if GAUSSIAN_FLAG == 1
     templates.push_back(Image::ColorImage::gaussian_smoother(template_image));
 #else
-    templates.push_back(template_image);
+    templates.push_back(std::move(template_image));
 #endif
   }
 
-  std::sort( templates.begin(), templates.end());
+  std::stable_sort( templates.begin(), templates.end());
 
   /* extra sampling parameters computation*/
   const float scaling_start = 1.f;
@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
     }
     j++;
   }
-  std::sort( template_cis.begin(), template_cis.end());
+  std::stable_sort( template_cis.begin(), template_cis.end());
 
   /* radial sampling templates */
   const float rotation_step_delta = ( rotation_end - rotation_start) / rotation_step_count;
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
   const unsigned int lowj = min_radius;
   const unsigned int highj = main_image.get_width() - min_radius;
 
-#pragma omp parallel default(shared)
+//#pragma omp parallel default(shared)
   {
     fp* buff_l, *buff_a, *buff_b;
     posix_memalign( (void**)&buff_l, MEMALLIGN, (highj-lowj)*sizeof(fp));
@@ -172,8 +172,8 @@ int main(int argc, char* argv[]) {
     posix_memalign( (void**)&main_ras_b, MEMALLIGN, rotation_step_count*sizeof(fp));
     unsigned int k, r1;
 
-#pragma omp for \
-  private(i, j)
+//#pragma omp for \
+//  private(i, j)
     for(i=lowi; i < highi; i++) {
 
       std::vector< std::tuple< unsigned int /*width coord*/, unsigned int /*temp_id*/, float /*scale*/> > cis_pix;
@@ -189,8 +189,9 @@ int main(int argc, char* argv[]) {
       }
 
       for(j=0;j<(highj-lowj);j++) {
-        buff_l_S[j] = __sec_reduce_add( main_cis_l.get_row(j)[0:k]);
-        buff_l_S2[j] = __sec_reduce_add( pow( main_cis_l.get_row(j)[0:k], 2));
+        fp *m_cis_l = main_cis_l.get_row(j);
+        buff_l_S[j] = __sec_reduce_add( m_cis_l[0:k]);
+        buff_l_S2[j] = __sec_reduce_add( pow( m_cis_l[0:k], 2));
       }
 
       for(j=0;j<(highj-lowj);j++) {
@@ -217,7 +218,7 @@ int main(int argc, char* argv[]) {
         if( cis_corr > th1) {
           cis_pix.push_back( std::make_tuple( j+lowj, template_cis[0].id, scaling_start));
 #if SHOW_FILTERS == 1
-#pragma omp critical (first)
+//#pragma omp critical (first)
 {
            first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
 }
@@ -246,7 +247,9 @@ int main(int argc, char* argv[]) {
         for(j=off;j<(highj-lowj-off);j++) {
           fp *m_cis_l = main_cis_l.get_row(j);
           fp *t_cis_l = template_cis[temp_id].cis_l;
-          fp S_mt = __sec_reduce_add( m_cis_l[0:k] * t_cis_l[0:k]);
+          aux[0:k] = (m_cis_l[0:k] * t_cis_l[0:k]);
+          fp S_mt = __sec_reduce_add( aux[0:k]);
+          //fp S_mt = __sec_reduce_add( m_cis_l[0:k] * t_cis_l[0:k]);
           fp S_l = (S_mt - buff_l_S[j]*template_cis[temp_id].cis_l_S/k)
                   / sqrt( (template_cis[temp_id].cis_l_S2 - pow( template_cis[temp_id].cis_l_S, 2)/k)
                           * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
@@ -267,7 +270,7 @@ int main(int argc, char* argv[]) {
           if( cis_corr > th1) {
             cis_pix.push_back( std::make_tuple( j+lowj, template_cis[temp_id].id, template_cis[temp_id].scale));
 #if SHOW_FILTERS == 1
-#pragma omp critical (first)
+//#pragma omp critical (first)
 {
              first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
 }
@@ -327,7 +330,7 @@ int main(int argc, char* argv[]) {
         fp angle = rotation_start + maxi * rotation_step_delta;
 
 #if SHOW_FILTERS == 1
-#pragma omp critical (second)
+//#pragma omp critical (second)
 {
         second_grade_pixels.push_back( std::make_tuple( i, std::get<0>(*it)));
 }
@@ -383,7 +386,7 @@ int main(int argc, char* argv[]) {
           continue;
 
 #if SHOW_FILTERS == 1
-#pragma omp critical (third)
+//#pragma omp critical (third)
 {
         third_grade_pixels.push_back( std::make_tuple( i, std::get<0>(*it)));
 }
@@ -397,7 +400,7 @@ int main(int argc, char* argv[]) {
 
         DisjointSet::DsCell< std::tuple<int,int,int,fp> >* dscell =
             new DisjointSet::DsCell< std::tuple<int,int,int,fp> >( std::make_tuple(_id, _x, _y, corr));
-#pragma omp critical (res)
+//#pragma omp critical (res)
 {
         results.push_back( dscell);
 }
