@@ -111,6 +111,11 @@ namespace Image {
   void radial_sampling( const Image::ColorImage& im, unsigned int yc, unsigned int xc, unsigned int r,
                         float rotation_start, float rotation_step_delta, unsigned int rotation_step_count,
                         fp* _l, fp* _a, fp* _b);
+
+  void frame_target( unsigned int y1 /* upper left corner height coord */,
+                     unsigned int x1 /* upper left corner width coord */,
+                     unsigned int th /* target height */, unsigned int tw /* target width */,
+                     float angle /* target rotation angle */, Image::ColorImage& im );
 } //namespace
 
 inline

@@ -899,97 +899,18 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
 
   if( r == 0) {
     count = 1;
-//    aux = (im.l + yc*im._width_ + xc);
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _l[i] = aux[i];
     _l[0:dx] = (im.l + yc*im._width_)[xc:dx];
-//    aux = (im.a + yc*im._width_ + xc);
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _a[i] = aux[i];
     _a[0:dx] = (im.a + yc*im._width_)[xc:dx];
-//    aux = (im.b + yc*im._width_ + xc);
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _b[i] = aux[i];
     _b[0:dx] = (im.b + yc*im._width_)[xc:dx];
   }
   else {
     x = 0;
     y = r;
     /* cross-tip points */
-//    aux = im.l + (r+yc)*im._width_ + xc;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _l[i] = aux[i];
-//    aux = im.l + (-r+yc)*im._width_ + xc;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _l[i] += aux[i];
-//    aux = im.l + yc*im._width_ + xc+r;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _l[i] += aux[i];
-//    aux = im.l + yc*im._width_ + xc-r;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _l[i] += aux[i];
-//    for(unsigned int i=0;i<dx;i++) {
-//      _l[i] = (im.l + (r+yc)*im._width_ + xc)[i];
-//      _l[i] += (im.l + (-r+yc)*im._width_ + xc)[i];
-//      _l[i] += (im.l + yc*im._width_ + xc + r)[i];
-//      _l[i] += (im.l + yc*im._width_ + xc - r)[i];
-//    }
     _l[0:dx] = (im.l + (r+yc)*im._width_)[xc:dx] + (im.l + (-r+yc)*im._width_)[xc:dx]
                + (im.l + yc*im._width_)[xc+r:dx] + (im.l + yc*im._width_)[xc-r:dx];
-
-//    aux = im.a + (r+yc)*im._width_ + xc;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _a[i] = aux[i];
-//    aux = im.a + (-r+yc)*im._width_ + xc;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _a[i] += aux[i];
-//    aux = im.a + yc*im._width_ + xc+r;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _a[i] += aux[i];
-//    aux = im.a + yc*im._width_ + xc-r;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _a[i] += aux[i];
-//    for(unsigned int i=0;i<dx;i++) {
-//      _a[i] = (im.a + (r+yc)*im._width_ + xc)[i];
-//      _a[i] += (im.a + (-r+yc)*im._width_ + xc)[i];
-//      _a[i] += (im.a + yc*im._width_ + xc + r)[i];
-//      _a[i] += (im.a + yc*im._width_ + xc - r)[i];
-//    }
     _a[0:dx] = (im.a + (r+yc)*im._width_)[xc:dx] + (im.a + (-r+yc)*im._width_)[xc:dx]
                + (im.a + yc*im._width_)[xc+r:dx] + (im.a + yc*im._width_)[xc-r:dx];
-//    aux = im.b + (r+yc)*im._width_ + xc;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _b[i] = aux[i];
-//    aux = im.b + (-r+yc)*im._width_ + xc;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _b[i] += aux[i];
-//    aux = im.b + yc*im._width_ + xc+r;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _b[i] += aux[i];
-//    aux = im.b + yc*im._width_ + xc-r;
-//#pragma simd assert
-//    for(unsigned int i=0;i<dx;i++)
-//      _b[i] += aux[i];
-//    for(unsigned int i=0;i<dx;i++) {
-//      _b[i] = (im.b + (r+yc)*im._width_ + xc)[i];
-//      _b[i] += (im.b + (-r+yc)*im._width_ + xc)[i];
-//      _b[i] += (im.b + yc*im._width_ + xc + r)[i];
-//      _b[i] += (im.b + yc*im._width_ + xc - r)[i];
-//    }
     _b[0:dx] = (im.b + (r+yc)*im._width_)[xc:dx] + (im.b + (-r+yc)*im._width_)[xc:dx]
                + (im.b + yc*im._width_)[xc+r:dx] + (im.b + yc*im._width_)[xc-r:dx];
     count = 4;
@@ -1004,79 +925,10 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
 
       if( x >= y) {
         if( x == y) {
-//          aux = (im.l + (yc-y)*im._width_ + xc-x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _l[i] += aux[i];
-//          aux = (im.l + (yc-y)*im._width_ + xc+x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _l[i] += aux[i];
-//          aux = (im.l + (yc+y)*im._width_ + xc+x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _l[i] += aux[i];
-//          aux = (im.l + (yc+y)*im._width_ + xc-x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _l[i] += aux[i];
-
-          //for(unsigned int i=0;i<dx;i++) {
-          //  _l[i] += (im.l + (yc-y)*im._width_ + xc-x)[i];
-          //  _l[i] += (im.l + (yc-y)*im._width_ + xc+x)[i];
-          //  _l[i] += (im.l + (yc+y)*im._width_ + xc+x)[i];
-          //  _l[i] += (im.l + (yc+y)*im._width_ + xc-x)[i];
-          //}
           _l[0:dx] += (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
                      + (im.l + (yc+y)*im._width_)[xc+x:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
-//          aux = (im.a + (yc-y)*im._width_ + xc-x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _a[i] += aux[i];
-//          aux = (im.a + (yc-y)*im._width_ + xc+x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _a[i] += aux[i];
-//          aux = (im.a + (yc+y)*im._width_ + xc+x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _a[i] += aux[i];
-//          aux = (im.a + (yc+y)*im._width_ + xc-x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _a[i] += aux[i];
-
-          //for(unsigned int i=0;i<dx;i++) {
-          //  _a[i] += (im.a + (yc-y)*im._width_ + xc-x)[i];
-          //  _a[i] += (im.a + (yc-y)*im._width_ + xc+x)[i];
-          //  _a[i] += (im.a + (yc+y)*im._width_ + xc+x)[i];
-          //  _a[i] += (im.a + (yc+y)*im._width_ + xc-x)[i];
-          //}
           _a[0:dx] += (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
                      + (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
-
-//          aux = (im.b + (yc-y)*im._width_ + xc-x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _b[i] += aux[i];
-//          aux = (im.b + (yc-y)*im._width_ + xc+x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _b[i] += aux[i];
-//          aux = (im.b + (yc+y)*im._width_ + xc+x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _b[i] += aux[i];
-//          aux = (im.b + (yc+y)*im._width_ + xc-x);
-//#pragma simd assert
-//          for(unsigned int i=0;i<dx;i++)
-//            _b[i] += aux[i];
-          //for(unsigned int i=0;i<dx;i++) {
-          //  _b[i] += (im.b + (yc-y)*im._width_ + xc-x)[i];
-          //  _b[i] += (im.b + (yc-y)*im._width_ + xc+x)[i];
-          //  _b[i] += (im.b + (yc+y)*im._width_ + xc+x)[i];
-          //  _b[i] += (im.b + (yc+y)*im._width_ + xc-x)[i];
-          //}
           _b[0:dx] += (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
                      + (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+y)*im._width_)[xc-x:dx];
           count += 4;
@@ -1085,140 +937,14 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
       }
 
       /*symmetry points in the other seven octants*/
-//      aux = (im.l + (yc+y)*im._width_ + xc+x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-//      aux = (im.l + (yc+x)*im._width_ + xc+y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-//      aux = (im.l + (yc-x)*im._width_ + xc+y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-//      aux = (im.l + (yc-y)*im._width_ + xc+x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-//      aux = (im.l + (yc-y)*im._width_ + xc-x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-//      aux = (im.l + (yc-x)*im._width_ + xc-y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-//      aux = (im.l + (yc+x)*im._width_ + xc-y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-//      aux = (im.l + (yc+y)*im._width_ + xc-x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _l[i] += aux[i];
-      //for(unsigned int i=0;i<dx;i++) {
-      //  _l[i] += (im.l + (yc+y)*im._width_ + xc+x)[i];
-      //  _l[i] += (im.l + (yc+x)*im._width_ + xc+y)[i];
-      //  _l[i] += (im.l + (yc-x)*im._width_ + xc+y)[i];
-      //  _l[i] += (im.l + (yc-y)*im._width_ + xc+x)[i];
-      //  _l[i] += (im.l + (yc-y)*im._width_ + xc-x)[i];
-      //  _l[i] += (im.l + (yc-x)*im._width_ + xc-y)[i];
-      //  _l[i] += (im.l + (yc+x)*im._width_ + xc-y)[i];
-      //  _l[i] += (im.l + (yc+y)*im._width_ + xc-x)[i];
-      //}
       _l[0:dx] += (im.l + (yc+y)*im._width_)[xc+x:dx] + (im.l + (yc+x)*im._width_)[xc+y:dx]
                   + (im.l + (yc-x)*im._width_)[xc+y:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
                   + (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-x)*im._width_)[xc-y:dx]
                   + (im.l + (yc+x)*im._width_)[xc-y:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
-//      aux = (im.a + (yc+y)*im._width_ + xc+x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-//      aux = (im.a + (yc+x)*im._width_ + xc+y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-//      aux = (im.a + (yc-x)*im._width_ + xc+y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-//      aux = (im.a + (yc-y)*im._width_ + xc+x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-//      aux = (im.a + (yc-y)*im._width_ + xc-x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-//      aux = (im.a + (yc-x)*im._width_ + xc-y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-//      aux = (im.a + (yc+x)*im._width_ + xc-y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-//      aux = (im.a + (yc+y)*im._width_ + xc-x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _a[i] += aux[i];
-      //for(unsigned int i=0;i<dx;i++) {
-      //  _a[i] += (im.a + (yc+y)*im._width_ + xc+x)[i];
-      //  _a[i] += (im.a + (yc+x)*im._width_ + xc+y)[i];
-      //  _a[i] += (im.a + (yc-x)*im._width_ + xc+y)[i];
-      //  _a[i] += (im.a + (yc-y)*im._width_ + xc+x)[i];
-      //  _a[i] += (im.a + (yc-y)*im._width_ + xc-x)[i];
-      //  _a[i] += (im.a + (yc-x)*im._width_ + xc-y)[i];
-      //  _a[i] += (im.a + (yc+x)*im._width_ + xc-y)[i];
-      //  _a[i] += (im.a + (yc+y)*im._width_ + xc-x)[i];
-      //}
       _a[0:dx] += (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+x)*im._width_)[xc+y:dx]
                   + (im.a + (yc-x)*im._width_)[xc+y:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
                   + (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-x)*im._width_)[xc-y:dx]
                   + (im.a + (yc+x)*im._width_)[xc-y:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
-//      aux = (im.b + (yc+y)*im._width_ + xc+x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-//      aux = (im.b + (yc+x)*im._width_ + xc+y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-//      aux = (im.b + (yc-x)*im._width_ + xc+y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-//      aux = (im.b + (yc-y)*im._width_ + xc+x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-//      aux = (im.b + (yc-y)*im._width_ + xc-x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-//      aux = (im.b + (yc-x)*im._width_ + xc-y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-//      aux = (im.b + (yc+x)*im._width_ + xc-y);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-//      aux = (im.b + (yc+y)*im._width_ + xc-x);
-//#pragma simd assert
-//      for(unsigned int i=0;i<dx;i++)
-//        _b[i] += aux[i];
-      //for(unsigned int i=0;i<dx;i++) {
-      //  _b[i] += (im.b + (yc+y)*im._width_ + xc+x)[i];
-      //  _b[i] += (im.b + (yc+x)*im._width_ + xc+y)[i];
-      //  _b[i] += (im.b + (yc-x)*im._width_ + xc+y)[i];
-      //  _b[i] += (im.b + (yc-y)*im._width_ + xc+x)[i];
-      //  _b[i] += (im.b + (yc-y)*im._width_ + xc-x)[i];
-      //  _b[i] += (im.b + (yc-x)*im._width_ + xc-y)[i];
-      //  _b[i] += (im.b + (yc+x)*im._width_ + xc-y)[i];
-      //  _b[i] += (im.b + (yc+y)*im._width_ + xc-x)[i];
-      //}
       _b[0:dx] += (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+x)*im._width_)[xc+y:dx]
                   + (im.b + (yc-x)*im._width_)[xc+y:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
                   + (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-x)*im._width_)[xc-y:dx]
@@ -1227,20 +953,8 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
     }
   }
 
-//#pragma simd assert
-//  for(unsigned int i=0;i<dx;i++) {
-//    _l[i] /= count;
-//  }
   _l[0:dx] /= count;
-//#pragma simd assert
-//  for(unsigned int i=0;i<dx;i++) {
-//    _a[i] /= count;
-//  }
   _a[0:dx] /= count;
-//#pragma simd assert
-//  for(unsigned int i=0;i<dx;i++) {
-//    _b[i] /= count;
-//  }
   _b[0:dx] /= count;
 }
 
@@ -1269,6 +983,172 @@ Sampling::CircularSamplingData Image::circular_sampling( const Image::ColorImage
   return sdata;
 }
 
+void draw_line ( int y1, int x1, unsigned int length, float angle, Image::ColorImage& im) {
+
+  x1 = std::min(std::max( x1, 0) , static_cast<int>(im.get_width())-1);
+  y1 = std::min(std::max( y1, 0) , static_cast<int>(im.get_height())-1);
+  int dx = static_cast<int>(round(length * cos( angle * Utils::D2R)));
+  int dy = static_cast<int>(round(length * sin( angle * Utils::D2R)));
+
+  int xf = std::min( std::max( x1+dx, 0), static_cast<int>(im.get_width())-1);
+  int yf = std::min( std::max( y1+dy, 0), static_cast<int>(im.get_height())-1);
+  int D, y, x;
+
+  if( angle >= 0.f && angle < 45.f) {
+
+    D = 2*dy - dx;
+    y = y1;
+
+    for( x = x1; (x <= xf) && (y <= yf); ++x) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D += 2*dy;
+      if( D > 0) {
+        y++;
+        D -= 2*dx;
+      }
+    }
+  }
+  else if( angle >= 45.f && angle < 90.f) {
+
+    D = 2*dx + dy;
+    x = x1;
+
+    for( y = y1; (y <= yf) && (x <= xf); ++y) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D -= 2*dx;
+      if( D < 0) {
+        x++;
+        D += 2*dy;
+      }
+    }
+  }
+  else if( angle >= 90.f && angle < 135.f) {
+
+    D = 2*dx + dy;
+    x = x1;
+
+    for( y = y1; (y <= yf) && (x >= xf); ++y) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D += 2*dx;
+      if( D < 0) {
+        x--;
+        D += 2*dy;
+      }
+    }
+  }
+  else if( angle >= 135.f && angle < 180.f) {
+
+    D = -2*dy - dx;
+    y = y1;
+
+    for( x = x1; (x >= xf) && (y <= yf); --x) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D -= 2*dy;
+      if( D < 0) {
+        y++;
+        D -= 2*dx;
+      }
+    }
+  }
+  else if( angle >= 180.f && angle < 225.f) {
+
+    D = 2*dy - dx;
+    y = y1;
+
+    for( x = x1; (x >= xf) && (y >= yf); --x) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D += 2*dy;
+      if( D < 0) {
+        y--;
+        D -= 2*dx;
+      }
+    }
+  }
+  else if( angle >= 225.f && angle < 270.f) {
+
+    D = 2*dx - dy;
+    x = x1;
+
+    for( y = y1; (y >= yf) && (x >= xf); --y) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D += 2*dx;
+      if( D < 0) {
+        x--;
+        D -= 2*dy;
+      }
+    }
+  }
+  else if( angle >= 270.f && angle < 315.f) {
+
+    D = 2*dx + dy;
+    x = x1;
+
+    for( y = y1; (y >= yf) && (x <= xf); --y) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D += 2*dx;
+      if( D > 0) {
+        x++;
+        D += 2*dy;
+      }
+    }
+  }
+  else if( angle >= 315.f && angle <= 360.f) {
+
+    D = 2*dy + dx;
+    y = y1;
+
+    for( x = x1; (x <= xf) && (y >= yf); ++x) {
+
+      im.L( y, x) = LMAGENTA;
+      im.A( y, x) = AMAGENTA;
+      im.B( y, x) = BMAGENTA;
+      D += 2*dy;
+      if( D < 0) {
+        y--;
+        D += 2*dx;
+      }
+    }
+  }
+}
+
+void Image::frame_target( unsigned int y1 /* upper left corner height coord */,
+                          unsigned int x1 /* upper left corner width coord */,
+                          unsigned int th /* target height */, unsigned int tw /* target width */,
+                          float angle /* target rotation angle */, Image::ColorImage& im ) {
+
+  draw_line ( y1, x1, tw, angle, im);
+  draw_line ( y1, x1, th, 90.f+angle, im);
+
+  int x2 = x1 + static_cast<int>(round( th*cos((90.f + angle)*Utils::D2R)));
+  int y2 = y1 + static_cast<int>(round( th*sin((90.f + angle)*Utils::D2R)));
+  draw_line ( y2, x2, tw, angle, im);
+
+  int x3 = x1 + static_cast<int>(round( tw*cos(angle*Utils::D2R)));
+  int y3 = y1 + static_cast<int>(round( tw*sin(angle*Utils::D2R)));
+  draw_line ( y3, x3, th, 90.f+angle, im);
+}
+
 void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angle, const Image::ColorImage& im,
                            fp* _l, fp* _a, fp* _b) {
 #if _DEBUG == 1
@@ -1295,20 +1175,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( x = xc; (x <= xf) && (y <= yf); ++x) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D += 2*dy;
       if( D > 0) {
-        *_l += static_cast<fp>(im.L( ++y, x));
-        *_a += static_cast<fp>(im.A( ++y, x));
-        *_b += static_cast<fp>(im.B( ++y, x));
+        y++;
         D -= 2*dx;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
 
   }
@@ -1319,20 +1196,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( y = yc; (y <= yf) && (x <= xf); ++y) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D -= 2*dx;
       if( D < 0) {
-        *_l += static_cast<fp>(im.L( y, ++x));
-        *_a += static_cast<fp>(im.A( y, ++x));
-        *_b += static_cast<fp>(im.B( y, ++x));
+        x++;
         D += 2*dy;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
 
   }
@@ -1343,20 +1217,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( y = yc; (y <= yf) && (x >= xf); ++y) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D += 2*dx;
       if( D < 0) {
-        *_l += static_cast<fp>(im.L( y, --x));
-        *_a += static_cast<fp>(im.A( y, --x));
-        *_b += static_cast<fp>(im.B( y, --x));
+        x--;
         D += 2*dy;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
 
   }
@@ -1367,20 +1238,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( x = xc; (x >= xf) && (y <= yf); --x) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D -= 2*dy;
       if( D < 0) {
-        *_l += static_cast<fp>(im.L( ++y, x));
-        *_a += static_cast<fp>(im.A( ++y, x));
-        *_b += static_cast<fp>(im.B( ++y, x));
+        y++;
         D -= 2*dx;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
   }
   else if( angle >= 180.f && angle < 225.f) {
@@ -1390,20 +1258,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( x = xc; (x >= xf) && (y >= yf); --x) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D += 2*dy;
       if( D < 0) {
-        *_l += static_cast<fp>(im.L( --y, x));
-        *_a += static_cast<fp>(im.A( --y, x));
-        *_b += static_cast<fp>(im.B( --y, x));
+        y--;
         D -= 2*dx;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
   }
   else if( angle >= 225.f && angle < 270.f) {
@@ -1413,20 +1278,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( y = yc; (y >= yf) && (x >= xf); --y) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D += 2*dx;
       if( D < 0) {
-        *_l += static_cast<fp>(im.L( y, --x));
-        *_a += static_cast<fp>(im.A( y, --x));
-        *_b += static_cast<fp>(im.B( y, --x));
+        x--;
         D -= 2*dy;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
   }
   else if( angle >= 270.f && angle < 315.f) {
@@ -1436,20 +1298,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( y = yc; (y >= yf) && (x <= xf); --y) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D += 2*dx;
       if( D > 0) {
-        *_l += static_cast<fp>(im.L( y, ++x));
-        *_a += static_cast<fp>(im.A( y, ++x));
-        *_b += static_cast<fp>(im.B( y, ++x));
+        x++;
         D += 2*dy;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
 
   }
@@ -1460,20 +1319,17 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
 
     for( x = xc; (x <= xf) && (y >= yf); ++x) {
 
+      *_l += static_cast<fp>(im.L( y, x));
+      *_a += static_cast<fp>(im.A( y, x));
+      *_b += static_cast<fp>(im.B( y, x));
+      count++;
+
       D += 2*dy;
       if( D < 0) {
-        *_l += static_cast<fp>(im.L( --y, x));
-        *_a += static_cast<fp>(im.A( --y, x));
-        *_b += static_cast<fp>(im.B( --y, x));
+        y--;
         D += 2*dx;
       }
-      else {
-        *_l += static_cast<fp>(im.L( y, x));
-        *_a += static_cast<fp>(im.A( y, x));
-        *_b += static_cast<fp>(im.B( y, x));
-      }
 
-      count++;
     }
 
   }

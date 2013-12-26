@@ -10,11 +10,17 @@
 #include "colorimage.h"
 #include "ControlDict.h"
 
-//#include <omp.h>
+#include <omp.h>
 
 using namespace std;
 
+
+#if FRAME_TARGET==1
+typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp /*corr*/,
+                                         unsigned int /* width */, unsigned int /* height */, float /* angle */> >* pDsCell;
+#else
 typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* pDsCell;
+#endif
 
 /*!
  *\struct Parameters
@@ -73,8 +79,8 @@ int main(int argc, char* argv[]) {
       return -1;
   }
 
-//  if( parameters.nb_threads >= 1)
-//    omp_set_num_threads(parameters.nb_threads);
+  if( parameters.nb_threads >= 1)
+    omp_set_num_threads(parameters.nb_threads);
 
   vector< Image::ColorImage> templates;
   /* iterates over the pattern images */
@@ -88,7 +94,6 @@ int main(int argc, char* argv[]) {
     templates.push_back(std::move(template_image));
 #endif
   }
-
   std::stable_sort( templates.begin(), templates.end());
 
   /* extra sampling parameters computation*/
@@ -148,7 +153,7 @@ int main(int argc, char* argv[]) {
   const unsigned int lowj = min_radius;
   const unsigned int highj = main_image.get_width() - min_radius;
 
-//#pragma omp parallel default(shared)
+#pragma omp parallel default(shared)
   {
     fp* buff_l, *buff_a, *buff_b;
     posix_memalign( (void**)&buff_l, MEMALLIGN, (highj-lowj)*sizeof(fp));
@@ -159,23 +164,22 @@ int main(int argc, char* argv[]) {
     fp* buff_l_S2;
     posix_memalign( (void**)&buff_l_S2, MEMALLIGN, (highj-lowj)*sizeof(fp));
 
-    unsigned int max_radius = std::ceil( templates[parameters.template_names.size()-1].get_radius() * parameters.max_scale);
-    uint count = (max_radius-circle_start)/circle_step_delta + 1;
+    unsigned int max_radius = std::round( templates[parameters.template_names.size()-1].get_radius() * parameters.max_scale);
+    uint count = (max_radius-circle_start)/circle_step_delta + 1 + 1;
     Utils::Array2d<fp> main_cis_l( highj-lowj, count);
     Utils::Array2d<fp> main_cis_a( highj-lowj, count);
     Utils::Array2d<fp> main_cis_b( highj-lowj, count);
-    fp* aux, *aux2, *aux3;
+    fp* aux, *aux2;
     posix_memalign( (void**)&aux, MEMALLIGN, std::max( count, rotation_step_count)*sizeof(fp));
-    posix_memalign( (void**)&aux2, MEMALLIGN, (rotation_step_count+2)*sizeof(fp));
-    posix_memalign( (void**)&aux3, MEMALLIGN, rotation_step_count*sizeof(fp));
+    posix_memalign( (void**)&aux2, MEMALLIGN, rotation_step_count*sizeof(fp));
     fp* main_ras_l, *main_ras_a, *main_ras_b;
     posix_memalign( (void**)&main_ras_l, MEMALLIGN, rotation_step_count*sizeof(fp));
     posix_memalign( (void**)&main_ras_a, MEMALLIGN, rotation_step_count*sizeof(fp));
     posix_memalign( (void**)&main_ras_b, MEMALLIGN, rotation_step_count*sizeof(fp));
     unsigned int k, r1;
 
-//#pragma omp for \
-//  private(i, j)
+#pragma omp for \
+  private(i, j) schedule(guided)
     for(i=lowi; i < highi; i++) {
 
       std::vector< std::tuple< unsigned int /*width coord*/, unsigned int /*temp_id*/, float /*scale*/> > cis_pix;
@@ -220,7 +224,7 @@ int main(int argc, char* argv[]) {
         if( cis_corr > th1) {
           cis_pix.push_back( std::make_tuple( j+lowj, template_cis[0].id, scaling_start));
 #if SHOW_FILTERS == 1
-//#pragma omp critical (first)
+#pragma omp critical (first)
 {
            first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
 }
@@ -249,9 +253,7 @@ int main(int argc, char* argv[]) {
         for(j=off;j<(highj-lowj-off);j++) {
           fp *m_cis_l = main_cis_l.get_row(j);
           fp *t_cis_l = template_cis[temp_id].cis_l;
-          aux[0:k] = (m_cis_l[0:k] * t_cis_l[0:k]);
-          fp S_mt = __sec_reduce_add( aux[0:k]);
-          //fp S_mt = __sec_reduce_add( m_cis_l[0:k] * t_cis_l[0:k]);
+          fp S_mt = __sec_reduce_add( m_cis_l[0:k] * t_cis_l[0:k]);
           fp S_l = (S_mt - buff_l_S[j]*template_cis[temp_id].cis_l_S/k)
                   / sqrt( (template_cis[temp_id].cis_l_S2 - pow( template_cis[temp_id].cis_l_S, 2)/k)
                           * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
@@ -272,7 +274,7 @@ int main(int argc, char* argv[]) {
           if( cis_corr > th1) {
             cis_pix.push_back( std::make_tuple( j+lowj, template_cis[temp_id].id, template_cis[temp_id].scale));
 #if SHOW_FILTERS == 1
-//#pragma omp critical (first)
+#pragma omp critical (first)
 {
              first_grade_pixels.push_back( std::make_tuple( i, j+lowj));
 }
@@ -315,24 +317,17 @@ int main(int argc, char* argv[]) {
                      + pow( main_ras_b[0:k] - t_ras_b[(rotation_step_count-k):k], 2);
           fp S_c = __sec_reduce_add( sqrt( aux[0:rotation_step_count]));
           S_c = 1.f - (S_c/(200.f*sqrt(2.f)*rotation_step_count));
-          aux2[k+1] = pow(S_l, _alpha_) * pow(S_c, _beta_);
+          aux2[k] = pow(S_l, _alpha_) * pow(S_c, _beta_);
         }
-        aux2[0] = aux2[rotation_step_count];
-        aux2[rotation_step_count+1] = aux2[0];
+        unsigned int maxi = __sec_reduce_max_ind( aux2[0:rotation_step_count]);
 
-        aux3[0:rotation_step_count] = aux2[1:rotation_step_count];
-        aux3[0:rotation_step_count] += aux2[0:rotation_step_count]/2.f;
-        aux3[0:rotation_step_count] += aux2[2:rotation_step_count]/2.f;
-        aux3[0:rotation_step_count] /= 2.f;
-        unsigned int maxi = __sec_reduce_max_ind(aux3[0:rotation_step_count]);
-
-        if( aux3[maxi] < th2)
+        if( aux2[maxi] < th2)
           continue;
 
         fp angle = rotation_start + maxi * rotation_step_delta;
 
 #if SHOW_FILTERS == 1
-//#pragma omp critical (second)
+#pragma omp critical (second)
 {
         second_grade_pixels.push_back( std::make_tuple( i, std::get<0>(*it)));
 }
@@ -388,21 +383,25 @@ int main(int argc, char* argv[]) {
           continue;
 
 #if SHOW_FILTERS == 1
-//#pragma omp critical (third)
+#pragma omp critical (third)
 {
         third_grade_pixels.push_back( std::make_tuple( i, std::get<0>(*it)));
 }
 #endif
 
         int _id = templates[std::get<1>(*it)].get_id();
-        unsigned int dx = templates[std::get<1>(*it)].get_width() / 2;
-        unsigned int dy = templates[std::get<1>(*it)].get_height() / 2;
-        int _y = i + static_cast<int>(round(dx*sin( Utils::D2R * best_angle) - dy*cos( Utils::D2R * best_angle)));
+        unsigned int dx = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_width() / 2) * best_scale));
+        unsigned int dy = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_height() / 2) * best_scale));
+        int _y = i - static_cast<int>(round(dx*sin( Utils::D2R * best_angle) + dy*cos( Utils::D2R * best_angle)));
         int _x = std::get<0>(*it) - static_cast<int>(round(dx*cos( Utils::D2R * best_angle) - dy*sin( Utils::D2R * best_angle)));
 
-        DisjointSet::DsCell< std::tuple<int,int,int,fp> >* dscell =
-            new DisjointSet::DsCell< std::tuple<int,int,int,fp> >( std::make_tuple(_id, _x, _y, corr));
-//#pragma omp critical (res)
+#if FRAME_TARGET==1
+        pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp,uint,uint,float> >(
+                                  std::make_tuple(_id, _x, _y, corr, dx*2, dy*2, best_angle));
+#else
+        pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp> >( std::make_tuple(_id, _x, _y, corr));
+#endif
+#pragma omp critical (res)
 {
         results.push_back( dscell);
 }
@@ -415,7 +414,7 @@ int main(int argc, char* argv[]) {
     free(buff_l); free(buff_a); free(buff_b);
     free(buff_l_S);
     free(buff_l_S2);
-    free(aux); free(aux2); free(aux3);
+    free(aux); free(aux2);
   }
 
   free(template_ras_l_S);
@@ -483,6 +482,16 @@ int main(int argc, char* argv[]) {
   /* print cluster parents only */
   for( std::vector< pDsCell >::iterator it = best_results.begin(); it != best_results.end(); ++it)
     std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
+
+#if FRAME_TARGET==1
+  Image::ColorImage target_main_image( main_image);
+  for( std::vector< pDsCell >::iterator it = best_results.begin(); it != best_results.end(); ++it) {
+    Image::frame_target( std::get<2>((*it)->data), std::get<1>((*it)->data), std::get<5>((*it)->data),
+                         std::get<4>((*it)->data), std::get<6>((*it)->data), target_main_image);
+  }
+
+  Image::ColorImage::write_image_to_bitmap( target_main_image, "target.bmp");
+#endif
 
   for( std::vector< pDsCell >::iterator it = results.begin(); it != results.end(); ++it)
     delete (*it);

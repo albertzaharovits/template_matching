@@ -9,6 +9,8 @@
 
 #define SHOW_FILTERS 1
 
+#define FRAME_TARGET 1
+
 #define _DEBUG 0
 
 /* luminance correlation coef */
@@ -28,12 +30,12 @@ static const float th1 = 0.95f;
 /* RADIAL SAMPLING FILTER SETTINGS */
 /* rate of angle sampling */
 //static const unsigned int rotation_step_count = 72;
-static const unsigned int rotation_step_count = 90;
+static const unsigned int rotation_step_count = 72;
 static const float rotation_start = 0.f;
 static const float rotation_end = 360.f; /* not including this value */
 /* threshold for second grade candidate pixels */
 //static const float th2 = 0.8f;
-static const float th2 = 0.5f;
+static const float th2 = 0.75f;
 
 /* threshold for last filter */
 //static const float th3 = 0.54f;
