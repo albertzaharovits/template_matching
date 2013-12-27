@@ -15,12 +15,12 @@
 using namespace std;
 
 
-#if FRAME_TARGET==1
+//#if FRAME_TARGET==1
 typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp /*corr*/,
                                          unsigned int /* width */, unsigned int /* height */, float /* angle */> >* pDsCell;
-#else
-typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* pDsCell;
-#endif
+//#else
+//typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* pDsCell;
+//#endif
 
 /*!
  *\struct Parameters
@@ -101,6 +101,11 @@ int main(int argc, char* argv[]) {
   const uint scaling_step_count = floor( parameters.max_scale - scaling_start)/scaling_step_delta + 1u;
   const float scaling_end = scaling_start + (scaling_step_count - 1u) * scaling_step_delta;
 
+  /* adjusting radial sampling step delta, accounting for min template radius */
+  circle_step_delta = std::max( circle_step_delta, templates[0].get_radius() / start_circle_count);
+
+  std::cout << circle_step_delta << std::endl;
+
   /* circular sampling data */
   std::vector< Sampling::CircularSamplingData > template_cis;
   template_cis.reserve( parameters.template_names.size() * scaling_step_count);
@@ -126,6 +131,7 @@ int main(int argc, char* argv[]) {
 
   /* radial sampling templates */
   const float rotation_step_delta = ( rotation_end - rotation_start) / rotation_step_count;
+
   /* radial sampling data */
   Utils::Array2d<fp> template_ras_l( parameters.template_names.size(), rotation_step_count);
   fp *template_ras_l_S, *template_ras_l_S2;
@@ -182,6 +188,7 @@ int main(int argc, char* argv[]) {
   private(i, j) schedule(guided)
     for(i=lowi; i < highi; i++) {
 
+      std::cout << i << std::endl;
       std::vector< std::tuple< unsigned int /*width coord*/, unsigned int /*temp_id*/, float /*scale*/> > cis_pix;
 
       k = 0;
@@ -389,18 +396,23 @@ int main(int argc, char* argv[]) {
 }
 #endif
 
+//        int _id = templates[std::get<1>(*it)].get_id();
+//        unsigned int dx = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_width() / 2) * best_scale));
+//        unsigned int dy = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_height() / 2) * best_scale));
+//        int _y = i - static_cast<int>(round(dx*sin( Utils::D2R * best_angle) + dy*cos( Utils::D2R * best_angle)));
+//        int _x = std::get<0>(*it) - static_cast<int>(round(dx*cos( Utils::D2R * best_angle) - dy*sin( Utils::D2R * best_angle)));
+//
+//#if FRAME_TARGET==1
+//        pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp,uint,uint,float> >(
+//                                  std::make_tuple(_id, _x, _y, corr, dx*2, dy*2, best_angle));
+//#else
+//        pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp> >( std::make_tuple(_id, _x, _y, corr));
+//#endif
         int _id = templates[std::get<1>(*it)].get_id();
-        unsigned int dx = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_width() / 2) * best_scale));
-        unsigned int dy = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_height() / 2) * best_scale));
-        int _y = i - static_cast<int>(round(dx*sin( Utils::D2R * best_angle) + dy*cos( Utils::D2R * best_angle)));
-        int _x = std::get<0>(*it) - static_cast<int>(round(dx*cos( Utils::D2R * best_angle) - dy*sin( Utils::D2R * best_angle)));
-
-#if FRAME_TARGET==1
+        unsigned int height = static_cast<unsigned int>(round(templates[std::get<1>(*it)].get_height() * best_scale));
+        unsigned int width = static_cast<unsigned int>(round(templates[std::get<1>(*it)].get_width() * best_scale));
         pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp,uint,uint,float> >(
-                                  std::make_tuple(_id, _x, _y, corr, dx*2, dy*2, best_angle));
-#else
-        pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp> >( std::make_tuple(_id, _x, _y, corr));
-#endif
+                                  std::make_tuple(_id, std::get<0>(*it), i, corr, height, width, best_angle));
 #pragma omp critical (res)
 {
         results.push_back( dscell);
@@ -462,7 +474,7 @@ int main(int argc, char* argv[]) {
 
       fp dist = pow( std::get<1>(ci->data) - std::get<1>(cj->data), 2) +
                 pow( std::get<2>(ci->data) - std::get<2>(cj->data), 2);
-      if( dist < min_dist)
+      if( dist <= min_dist)
         DisjointSet::ds_union( *ci, *cj);
     }
   }
@@ -479,17 +491,24 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  /* print cluster parents only */
-  for( std::vector< pDsCell >::iterator it = best_results.begin(); it != best_results.end(); ++it)
-    std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
-
 #if FRAME_TARGET==1
   Image::ColorImage target_main_image( main_image);
+#endif
+
+  /* print cluster parents only */
   for( std::vector< pDsCell >::iterator it = best_results.begin(); it != best_results.end(); ++it) {
-    Image::frame_target( std::get<2>((*it)->data), std::get<1>((*it)->data), std::get<5>((*it)->data),
-                         std::get<4>((*it)->data), std::get<6>((*it)->data), target_main_image);
+    float angle = std::get<6>((*it)->data);
+    int h = std::get<4>((*it)->data) / 2;
+    int w = std::get<5>((*it)->data) / 2;
+    int y = std::get<2>((*it)->data) - static_cast<int>(round(w*sin( Utils::D2R * angle) + h*cos( Utils::D2R * angle)));
+    int x = std::get<1>((*it)->data) - static_cast<int>(round(w*cos( Utils::D2R * angle) - h*sin( Utils::D2R * angle)));
+    std::cout << std::get<0>((*it)->data) << '\t' << x << '\t' << y << std::endl;
+#if FRAME_TARGET==1
+    Image::frame_target( y, x, h*2, w*2, angle, target_main_image);
+#endif
   }
 
+#if FRAME_TARGET==1
   Image::ColorImage::write_image_to_bitmap( target_main_image, "target.bmp");
 #endif
 

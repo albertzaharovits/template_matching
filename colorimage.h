@@ -103,14 +103,14 @@ namespace Image {
                         const Image::ColorImage& im, fp* _l, fp* _a, fp* _b);
 
   void line_pix_mean( unsigned int yc, unsigned int xc, float r, float angle, const Image::ColorImage& im,
-                      fp* _l, fp* _a, fp* _b);
+                      fp *  _l, fp * _a, fp * _b);
 
   Sampling::CircularSamplingData circular_sampling( const Image::ColorImage& im,
                                         uint circle_start, uint circle_step_delta);
 
   void radial_sampling( const Image::ColorImage& im, unsigned int yc, unsigned int xc, unsigned int r,
                         float rotation_start, float rotation_step_delta, unsigned int rotation_step_count,
-                        fp* _l, fp* _a, fp* _b);
+                        fp* restrict _l, fp* restrict _a, fp* restrict _b);
 
   void frame_target( unsigned int y1 /* upper left corner height coord */,
                      unsigned int x1 /* upper left corner width coord */,

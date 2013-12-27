@@ -994,6 +994,11 @@ void draw_line ( int y1, int x1, unsigned int length, float angle, Image::ColorI
   int yf = std::min( std::max( y1+dy, 0), static_cast<int>(im.get_height())-1);
   int D, y, x;
 
+  while( angle < 0.f)
+    angle += 360.f;
+  while( angle > 360.f)
+    angle -= 360.f;
+
   if( angle >= 0.f && angle < 45.f) {
 
     D = 2*dy - dx;
@@ -1150,7 +1155,7 @@ void Image::frame_target( unsigned int y1 /* upper left corner height coord */,
 }
 
 void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angle, const Image::ColorImage& im,
-                           fp* _l, fp* _a, fp* _b) {
+                           fp* restrict _l, fp* restrict _a, fp* restrict _b) {
 #if _DEBUG == 1
   assert( (angle >= 0.f) && (angle <= 360.f));
   assert( r > 0.f);
@@ -1185,7 +1190,6 @@ void Image::line_pix_mean( unsigned int yc, unsigned int xc, float r, float angl
         y++;
         D -= 2*dx;
       }
-
     }
 
   }
