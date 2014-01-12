@@ -15,12 +15,8 @@
 using namespace std;
 
 
-//#if FRAME_TARGET==1
 typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp /*corr*/,
                                          unsigned int /* width */, unsigned int /* height */, float /* angle */> >* pDsCell;
-//#else
-//typedef DisjointSet::DsCell< std::tuple< int /*template id*/, int /*x*/, int /*y*/, fp/*corr*/> >* pDsCell;
-//#endif
 
 /*!
  *\struct Parameters
@@ -396,23 +392,11 @@ int main(int argc, char* argv[]) {
 }
 #endif
 
-//        int _id = templates[std::get<1>(*it)].get_id();
-//        unsigned int dx = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_width() / 2) * best_scale));
-//        unsigned int dy = static_cast<unsigned int>(round((templates[std::get<1>(*it)].get_height() / 2) * best_scale));
-//        int _y = i - static_cast<int>(round(dx*sin( Utils::D2R * best_angle) + dy*cos( Utils::D2R * best_angle)));
-//        int _x = std::get<0>(*it) - static_cast<int>(round(dx*cos( Utils::D2R * best_angle) - dy*sin( Utils::D2R * best_angle)));
-//
-//#if FRAME_TARGET==1
-//        pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp,uint,uint,float> >(
-//                                  std::make_tuple(_id, _x, _y, corr, dx*2, dy*2, best_angle));
-//#else
-//        pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp> >( std::make_tuple(_id, _x, _y, corr));
-//#endif
         int _id = templates[std::get<1>(*it)].get_id();
         unsigned int height = static_cast<unsigned int>(round(templates[std::get<1>(*it)].get_height() * best_scale));
         unsigned int width = static_cast<unsigned int>(round(templates[std::get<1>(*it)].get_width() * best_scale));
         pDsCell dscell = new DisjointSet::DsCell< std::tuple<int,int,int,fp,uint,uint,float> >(
-                                  std::make_tuple(_id, std::get<0>(*it), i, corr, height, width, best_angle));
+                                  std::make_tuple(_id, static_cast<int>(std::get<0>(*it)), static_cast<int>(i), corr, height, width, best_angle));
 #pragma omp critical (res)
 {
         results.push_back( dscell);
