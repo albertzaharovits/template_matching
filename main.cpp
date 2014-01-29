@@ -93,12 +93,12 @@ int main(int argc, char* argv[]) {
   std::stable_sort( templates.begin(), templates.end());
 
   /* extra sampling parameters computation*/
-  const float scaling_start = 1.f;
   const uint scaling_step_count = floor( parameters.max_scale - scaling_start)/scaling_step_delta + 1u;
   const float scaling_end = scaling_start + (scaling_step_count - 1u) * scaling_step_delta;
 
   /* adjusting radial sampling step delta, accounting for min template radius */
-  circle_step_delta = std::max( circle_step_delta, templates[0].get_radius() / start_circle_count);
+  circle_step_delta = std::max( circle_step_delta,
+                                static_cast<uint>(( std::round(templates[0].get_radius() * scaling_start / start_circle_count))));
 
   std::cout << circle_step_delta << std::endl;
 
@@ -108,15 +108,10 @@ int main(int argc, char* argv[]) {
   /* circular sampling templates */
   j = 0;
   for(const Image::ColorImage& temp : templates) {
-
-    Sampling::CircularSamplingData cs = Image::circular_sampling( temp, circle_start, circle_step_delta);
-    cs.id = j;
-    cs.scale = scaling_start;
-    template_cis.push_back( std::move(cs));
-    for( unsigned int k=1; k < scaling_step_count; k++) {
+    for( unsigned int k=0; k < scaling_step_count; k++) {
       float s = scaling_start + k*scaling_step_delta;
       Image::ColorImage scaled = temp.scale_image(s);
-      cs = Image::circular_sampling( scaled, circle_start, circle_step_delta);
+      Sampling::CircularSamplingData cs = Image::circular_sampling( scaled, circle_start, circle_step_delta);
       cs.id = j;
       cs.scale = s;
       template_cis.push_back( std::move(cs));
@@ -149,7 +144,7 @@ int main(int argc, char* argv[]) {
 #if GAUSSIAN_FLAG == 1
   main_image = std::move( Image::ColorImage::gaussian_smoother(main_image));
 #endif
-  const unsigned int min_radius = templates[0].get_radius();
+  const unsigned int min_radius = template_cis[0].cis_n * circle_step_delta;
   const unsigned int lowi = min_radius;
   const unsigned int highi = main_image.get_height() - min_radius;
   const unsigned int lowj = min_radius;
@@ -211,7 +206,7 @@ int main(int argc, char* argv[]) {
                 / sqrt( (template_cis[0].cis_l_S2 - pow( template_cis[0].cis_l_S, 2)/k)
                         * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
         fp cis_corr;
-        if( S_l > 4.f || S_l < 0.f) {
+        if( S_l > 2.f || S_l < 0.f) {
           cis_corr = 0.f;
         }
         else {
@@ -261,7 +256,7 @@ int main(int argc, char* argv[]) {
                   / sqrt( (template_cis[temp_id].cis_l_S2 - pow( template_cis[temp_id].cis_l_S, 2)/k)
                           * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
           fp cis_corr;
-          if( S_l > 4.f || S_l < 0.f) {
+          if( S_l > 2.f || S_l < 0.f) {
             cis_corr = 0.f;
           }
           else {

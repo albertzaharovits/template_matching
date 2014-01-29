@@ -218,6 +218,11 @@ Image::ColorImage Image::ColorImage::scale_image(float scale_factor) const {
 #if _DEBUG == 1
   assert( scale_factor > 0.f);
 #endif
+
+  if( scale_factor >= 0.99f && scale_factor <= 1.01f) {
+    return Image::ColorImage( *this);
+  }
+
   Image::ColorImage im( static_cast<unsigned int>( floor(height * scale_factor)),
                        static_cast<unsigned int>( floor(width * scale_factor)), id);
 

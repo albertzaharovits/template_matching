@@ -20,11 +20,12 @@ static const float _beta_ = 0.2f;
 
 /* CIRCULAR SAMPLING FILTER SETTINGS */
 /* rate of scale sampling */
-static const float scaling_step_delta = 0.10f;
+static const float scaling_step_delta = 0.1f;
 
+static const float scaling_start = 0.5f;
 static const unsigned int circle_start = 0;
 static unsigned int circle_step_delta = 2;
-static const unsigned int start_circle_count = 10;
+static const unsigned int start_circle_count = 5;
 /* threshold for first grade candidate pixels */
 static const float th1 = 0.95f;
 
@@ -35,9 +36,9 @@ static const float rotation_start = 0.f;
 static const float rotation_end = 360.f; /* not including this value */
 /* threshold for second grade candidate pixels */
 //static const float th2 = 0.6f;
-static const float th2 = 0.65f;
+static const float th2 = 0.75f;
 
 /* threshold for last filter */
-static const float th3 = 0.6f;
+static const float th3 = 0.7f;
 
 #endif // CONTROLDICT_H
