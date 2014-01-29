@@ -220,7 +220,7 @@ int main(int argc, char* argv[]) {
           cis_corr = pow(S_l, _alpha_) * pow(S_c, _beta_);
         }
         if( cis_corr > th1) {
-          cis_pix.push_back( std::make_tuple( j+lowj, template_cis[0].id, scaling_start));
+          cis_pix.push_back( std::make_tuple( j+lowj, template_cis[0].id, template_cis[0].scale));
 #if SHOW_FILTERS == 1
 #pragma omp critical (first)
 {
