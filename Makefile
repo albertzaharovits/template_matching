@@ -11,13 +11,13 @@
 CC            = icc
 CXX           = icpc
 DEFINES       = -DQT_WEBKIT
-CFLAGS        = -openmp -restrict -O0 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
+CFLAGS        = -openmp -restrict -O3 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
 #CFLAGS        = -openmp -restrict -fast -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
 #CXXFLAGS      = -openmp -restrict -std=c++11 -fast -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
-CXXFLAGS      = -openmp -restrict -std=c++11 -O0 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
+CXXFLAGS      = -openmp -restrict -std=c++11 -O3 -g -w1 -Wcheck -wd654,1572,411,873,1125,2259 $(DEFINES) -vec-report=0
 INCPATH       = -I/usr/share/qt4/mkspecs/linux-icc-64 -I.
 LINK          = icpc
-LFLAGS        = -openmp -O0
+LFLAGS        = -openmp -O3
 LIBS          = $(SUBLIBS)    
 AR            = xiar cqs
 RANLIB        = 
