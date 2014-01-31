@@ -883,10 +883,6 @@ void Image::ColorImage::tag( Image::ColorImage& main, const Image::ColorImage& t
   }
 }
 
-
-//void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
-//                              unsigned int r,
-//                              const Image::ColorImage& im, fp* _l, fp* _a, fp* _b) {
 void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
                               unsigned int r,
                               const Image::ColorImage& im, fp* _l) {
@@ -921,12 +917,6 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
 #pragma simd
     for(int i=0;i<dx;i++)
       _l[i] = aux[xc+i] + aux1[xc+i] + aux2[xc+r+i] + aux2[xc-r+i];
-    //_l[0:dx] = (im.l + (r+yc)*im._width_)[xc:dx] + (im.l + (-r+yc)*im._width_)[xc:dx]
-    //           + (im.l + yc*im._width_)[xc+r:dx] + (im.l + yc*im._width_)[xc-r:dx];
-    //_a[0:dx] = (im.a + (r+yc)*im._width_)[xc:dx] + (im.a + (-r+yc)*im._width_)[xc:dx]
-    //           + (im.a + yc*im._width_)[xc+r:dx] + (im.a + yc*im._width_)[xc-r:dx];
-    //_b[0:dx] = (im.b + (r+yc)*im._width_)[xc:dx] + (im.b + (-r+yc)*im._width_)[xc:dx]
-    //           + (im.b + yc*im._width_)[xc+r:dx] + (im.b + yc*im._width_)[xc-r:dx];
     count = 4;
 
     p = 1.25f - static_cast<float>( r);
@@ -941,10 +931,6 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
         if( x == y) {
           _l[0:dx] += (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
                      + (im.l + (yc+y)*im._width_)[xc+x:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
-          //_a[0:dx] += (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
-          //           + (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
-          //_b[0:dx] += (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
-          //           + (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+y)*im._width_)[xc-x:dx];
           count += 4;
         }
         break;
@@ -955,14 +941,6 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
                   + (im.l + (yc-x)*im._width_)[xc+y:dx] + (im.l + (yc-y)*im._width_)[xc+x:dx]
                   + (im.l + (yc-y)*im._width_)[xc-x:dx] + (im.l + (yc-x)*im._width_)[xc-y:dx]
                   + (im.l + (yc+x)*im._width_)[xc-y:dx] + (im.l + (yc+y)*im._width_)[xc-x:dx];
-      //_a[0:dx] += (im.a + (yc+y)*im._width_)[xc+x:dx] + (im.a + (yc+x)*im._width_)[xc+y:dx]
-      //            + (im.a + (yc-x)*im._width_)[xc+y:dx] + (im.a + (yc-y)*im._width_)[xc+x:dx]
-      //            + (im.a + (yc-y)*im._width_)[xc-x:dx] + (im.a + (yc-x)*im._width_)[xc-y:dx]
-      //            + (im.a + (yc+x)*im._width_)[xc-y:dx] + (im.a + (yc+y)*im._width_)[xc-x:dx];
-      //_b[0:dx] += (im.b + (yc+y)*im._width_)[xc+x:dx] + (im.b + (yc+x)*im._width_)[xc+y:dx]
-      //            + (im.b + (yc-x)*im._width_)[xc+y:dx] + (im.b + (yc-y)*im._width_)[xc+x:dx]
-      //            + (im.b + (yc-y)*im._width_)[xc-x:dx] + (im.b + (yc-x)*im._width_)[xc-y:dx]
-      //            + (im.b + (yc+x)*im._width_)[xc-y:dx] + (im.b + (yc+y)*im._width_)[xc-x:dx];
       count += 8;
     }
   }
@@ -970,9 +948,6 @@ void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
 #pragma simd
   for(int i=0;i<dx;i++)
     _l[i] /= count;
-  //_l[0:dx] /= count;
-  //_a[0:dx] /= count;
-  //_b[0:dx] /= count;
 }
 
 Sampling::CircularSamplingData Image::circular_sampling( const Image::ColorImage& im,
@@ -983,7 +958,6 @@ Sampling::CircularSamplingData Image::circular_sampling( const Image::ColorImage
   Sampling::CircularSamplingData sdata( circle_start, circle_step_delta, count);
 
   uint r = circle_start;
-  //fp l, a, b;
   fp l;
 
   unsigned int yc = im.get_height()/2;
@@ -991,11 +965,8 @@ Sampling::CircularSamplingData Image::circular_sampling( const Image::ColorImage
 
   for(uint i=0;i<count;i++) {
 
-    //Image::circle_pix_mean( yc, xc, 1, r, im, &l, &a, &b);
     Image::circle_pix_mean( yc, xc, 1, r, im, &l);
     sdata.cis_l[i] = l; sdata.cis_l_S += l; sdata.cis_l_S2 += l*l;
-    //sdata.cis_a[i] = a;
-    //sdata.cis_b[i] = b;
     r += circle_step_delta;
   }
 
