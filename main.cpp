@@ -260,6 +260,8 @@ int main(int argc, char* argv[]) {
       for( std::vector< std::tuple< unsigned int /* width coord*/, unsigned int /* temp_id */, float /*scale*/> >::iterator it = cis_pix.begin();
            it != cis_pix.end(); ++it) {
 
+        unsigned int j = std::get<0>(*it);
+
         float radius = templates[std::get<1>(*it)].get_radius() * std::get<2>(*it);
 
         Image::radial_sampling( main_image, i, std::get<0>(*it), static_cast<int>(std::floor(radius)) ,
@@ -294,10 +296,11 @@ int main(int argc, char* argv[]) {
         }
         unsigned int maxi = __sec_reduce_max_ind( aux2[0:rotation_step_count]);
 
-        if( aux2[maxi] < th2)
-          continue;
-
         fp angle = rotation_start + maxi * rotation_step_delta;
+
+
+        if( aux2[maxi] < th2 || aux2[maxi]!=aux2[maxi] /* check for nan */)
+          continue;
 
 #if SHOW_FILTERS == 1
 #pragma omp critical (second)
@@ -310,6 +313,8 @@ int main(int argc, char* argv[]) {
 
         fp corr = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
                                        i, std::get<0>(*it), std::get<2>(*it), angle);
+        if(corr==0.f)
+          continue;
 
         fp corr2 = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
                                        i, std::get<0>(*it), std::get<2>(*it), angle+(rotation_step_delta/2));
@@ -474,13 +479,13 @@ int main(int argc, char* argv[]) {
 
   /* print cluster parents only */
   for( std::vector< pDsCell >::iterator it = best_results.begin(); it != best_results.end(); ++it) {
+    std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
+#if FRAME_TARGET==1
     float angle = std::get<6>((*it)->data);
     int h = std::get<4>((*it)->data) / 2;
     int w = std::get<5>((*it)->data) / 2;
     int y = std::get<2>((*it)->data) - static_cast<int>(round(w*sin( Utils::D2R * angle) + h*cos( Utils::D2R * angle)));
     int x = std::get<1>((*it)->data) - static_cast<int>(round(w*cos( Utils::D2R * angle) - h*sin( Utils::D2R * angle)));
-    std::cout << std::get<0>((*it)->data) << '\t' << x << '\t' << y << std::endl;
-#if FRAME_TARGET==1
     Image::frame_target( y, x, h*2, w*2, angle, target_main_image);
 #endif
   }
