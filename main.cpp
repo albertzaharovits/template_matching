@@ -75,6 +75,7 @@ int main(int argc, char* argv[]) {
       return -1;
   }
 
+  /* set thread count */
   if( parameters.nb_threads >= 1)
     omp_set_num_threads(parameters.nb_threads);
 
@@ -90,13 +91,15 @@ int main(int argc, char* argv[]) {
     templates.push_back(std::move(template_image));
 #endif
   }
+  /* sorts templates in increasing size order */
   std::stable_sort( templates.begin(), templates.end());
 
   /* extra sampling parameters computation*/
+  /* count of template scaling steps */
   const uint scaling_step_count = floor( parameters.max_scale - scaling_start)/scaling_step_delta + 1u;
   const float scaling_end = scaling_start + (scaling_step_count - 1u) * scaling_step_delta;
 
-  /* adjusting radial sampling step delta, accounting for min template radius */
+  /* adjusting circular sampling step delta, accounting for min template radius */
   circle_step_delta = std::max( circle_step_delta,
                                 static_cast<uint>(( std::round(templates[0].get_radius() * scaling_start / start_circle_count))));
 
@@ -116,6 +119,7 @@ int main(int argc, char* argv[]) {
     }
     j++;
   }
+  /* sort circular sampling data in increasing sampling vector length */
   std::stable_sort( template_cis.begin(), template_cis.end());
 
   /* radial sampling templates */
@@ -128,6 +132,7 @@ int main(int argc, char* argv[]) {
   posix_memalign( (void**)&template_ras_l_S2, MEMALLIGN, parameters.template_names.size()*sizeof(fp));
   Utils::Array2d<fp> template_ras_a( parameters.template_names.size(), rotation_step_count);
   Utils::Array2d<fp> template_ras_b( parameters.template_names.size(), rotation_step_count);
+  /* radial sampling templates */
   j = 0;
   for(const Image::ColorImage& temp : templates) {
     Image::radial_sampling( temp, temp.get_height()/2, temp.get_width()/2, temp.get_radius(),
@@ -143,6 +148,7 @@ int main(int argc, char* argv[]) {
   main_image = std::move( Image::ColorImage::gaussian_smoother(main_image));
 #endif
   const unsigned int min_radius = template_cis[0].cis_n * circle_step_delta;
+  /* bounds in main image */
   const unsigned int lowi = min_radius;
   const unsigned int highi = main_image.get_height() - min_radius;
   const unsigned int lowj = min_radius;
@@ -150,6 +156,7 @@ int main(int argc, char* argv[]) {
 
 #pragma omp parallel default(shared)
   {
+    /* thread private data */
     fp* buff_l;
     posix_memalign( (void**)&buff_l, MEMALLIGN, (highj-lowj)*sizeof(fp));
     fp* buff_l_S;
@@ -158,7 +165,9 @@ int main(int argc, char* argv[]) {
     posix_memalign( (void**)&buff_l_S2, MEMALLIGN, (highj-lowj)*sizeof(fp));
 
     unsigned int max_radius = std::round( templates[parameters.template_names.size()-1].get_radius() * parameters.max_scale);
+    /* main image circular sampling vector maximum length */
     uint count = (max_radius-circle_start)/circle_step_delta + 1 + 1;
+    /* each consecutive sampling radius for a given pixel are in consecutive memory locations */
     Utils::Array2d<fp> main_cis_l( highj-lowj, count);
     fp* aux, *aux2;
     posix_memalign( (void**)&aux, MEMALLIGN, std::max( count, rotation_step_count)*sizeof(fp));
@@ -178,32 +187,48 @@ int main(int argc, char* argv[]) {
       k = 0;
       r1 = circle_start;
       for( ; k < template_cis[0].cis_n; k++) {
+        /* circular sampling with radius r1 each pixel in main_image on line i
+         *  , starting on the left with the lowj pixel
+         *  , and placing result in the buff_l buffer
+         */
         Image::circle_pix_mean( i, lowj, highj-lowj, r1, main_image, buff_l);
+        /* scatter data from buff_l to main_cis_l so that consecutive radius
+         * sampling data for a given pixel are placed in consecutive memory 
+         * locations
+         */
         main_cis_l.scatter(k,buff_l,0);
+        /* increase circular sampling  radius */
         r1 += circle_step_delta;
       }
 
       for(j=0;j<(highj-lowj);j++) {
+        /* pointer to sampling data for pixel j */
         fp *m_cis_l = main_cis_l.get_row(j);
         buff_l_S[j] = __sec_reduce_add( m_cis_l[0:k]);
         buff_l_S2[j] = __sec_reduce_add( pow( m_cis_l[0:k], 2));
       }
 
       for(j=0;j<(highj-lowj);j++) {
+        /* pointer to sampling data for pixel j */
         fp *m_cis_l = main_cis_l.get_row(j);
+        /* smallest template circular sampling vector */
         fp *t_cis_l = template_cis[0].cis_l;
+        /* normalized cross correlation computation */
         fp S_mt = __sec_reduce_add( m_cis_l[0:k] * t_cis_l[0:k]);
         fp S_l = (S_mt - buff_l_S[j]*template_cis[0].cis_l_S/k)
                 / sqrt( (template_cis[0].cis_l_S2 - pow( template_cis[0].cis_l_S, 2)/k)
                         * (buff_l_S2[j] - pow( buff_l_S[j], 2)/k) );
         fp cis_corr;
+        /* relevant correlation should be in the 0-1 interval */
         if( S_l > 2.f || S_l < 0.f) {
           cis_corr = 0.f;
         }
         else {
+          /* for the cira filter correlaton is computed based only on the luminance values */
           cis_corr = S_l;
         }
         if( cis_corr > th1) {
+          /* pixels passing cira filter */
           cis_pix.push_back( std::make_tuple( j+lowj, template_cis[0].id, template_cis[0].scale));
 #if SHOW_FILTERS == 1
 #pragma omp critical (first)
@@ -214,6 +239,7 @@ int main(int argc, char* argv[]) {
         }
       }
 
+      /* loop over scaled templates circular sampling vectors */
       for( unsigned int temp_id = 1; temp_id < template_cis.size(); temp_id++) {
 
         unsigned int off = circle_step_delta * (template_cis[temp_id].cis_n - template_cis[0].cis_n);
@@ -257,26 +283,34 @@ int main(int argc, char* argv[]) {
       } // template_cis
 
 
+      /* vector of pixels promoted after cira filter, for the current i row in the main image */
       for( std::vector< std::tuple< unsigned int /* width coord*/, unsigned int /* temp_id */, float /*scale*/> >::iterator it = cis_pix.begin();
            it != cis_pix.end(); ++it) {
 
-        unsigned int j = std::get<0>(*it);
-
+        /* column coord for pixel in main image */
+        const unsigned int j = std::get<0>(*it);
+        /* std::get<1>(*it) = template id that promoted this pixel
+         * std::get<2>(*it) = scale of the template that promoted this pixel
+         */
         float radius = templates[std::get<1>(*it)].get_radius() * std::get<2>(*it);
 
-        Image::radial_sampling( main_image, i, std::get<0>(*it), static_cast<int>(std::floor(radius)) ,
+        /* radial sampling main image */
+        Image::radial_sampling( main_image, i, j, static_cast<int>(std::floor(radius)) ,
                                 rotation_start, rotation_step_delta, rotation_step_count,
                                 main_ras_l, main_ras_a, main_ras_b);
+        /* correlation computation f = main_image, t = template image */
         fp S_f = __sec_reduce_add( main_ras_l[0:rotation_step_count]);
         fp S_f2 = __sec_reduce_add( pow( main_ras_l[0:rotation_step_count], 2));
 
         fp S_t = template_ras_l_S[std::get<1>(*it)];
         fp S_t2 = template_ras_l_S2[std::get<1>(*it)];
 
+        /* pointers to template radial sampling vectors */
         fp* t_ras_l = template_ras_l.get_row( std::get<1>(*it));
         fp* t_ras_a = template_ras_a.get_row( std::get<1>(*it));
         fp* t_ras_b = template_ras_b.get_row( std::get<1>(*it));
 
+        /* normalized cross correlation for each angle */
         for( k=0; k<rotation_step_count; k++) {
 
           fp S_ft = 0;
@@ -296,9 +330,7 @@ int main(int argc, char* argv[]) {
         }
         unsigned int maxi = __sec_reduce_max_ind( aux2[0:rotation_step_count]);
 
-        fp angle = rotation_start + maxi * rotation_step_delta;
-
-
+        /* promote pixel to next filter */
         if( aux2[maxi] < th2 || aux2[maxi]!=aux2[maxi] /* check for nan */)
           continue;
 
@@ -308,9 +340,13 @@ int main(int argc, char* argv[]) {
         second_grade_pixels.push_back( std::make_tuple( i, std::get<0>(*it)));
 }
 #endif
+        fp angle = rotation_start + maxi * rotation_step_delta;
         fp best_scale = std::get<2>(*it);
         fp best_angle = angle;
 
+        /* "brute force" brighteness-contrast invariant correlation,
+         * slightly varing angle and scale
+         */
         fp corr = Image::ColorImage::bc_invariant_correlation( main_image, templates[std::get<1>(*it)],
                                        i, std::get<0>(*it), std::get<2>(*it), angle);
         if(corr==0.f)
@@ -380,6 +416,7 @@ int main(int argc, char* argv[]) {
           corr = corr2;
         }
 
+        /* promote as result pixel */
         if( corr < th3)
           continue;
 
@@ -401,7 +438,6 @@ int main(int argc, char* argv[]) {
 }
 
       }
-
     } // i
 
     free(main_ras_l); free(main_ras_a); free(main_ras_b);
@@ -461,7 +497,9 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  /* move best correlation pixel to cluster parent */
+  /* move best correlation pixel to cluster parent,
+   * this is the only pixel that is reported as a result
+   */
   std::vector< pDsCell > best_results;
   for( std::vector< pDsCell >::iterator it = results.begin(); it != results.end(); ++it) {
     pDsCell root = &DisjointSet::ds_find(*(*it));
@@ -479,15 +517,17 @@ int main(int argc, char* argv[]) {
 
   /* print cluster parents only */
   for( std::vector< pDsCell >::iterator it = best_results.begin(); it != best_results.end(); ++it) {
-    std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
 #if FRAME_TARGET==1
     float angle = std::get<6>((*it)->data);
     int h = std::get<4>((*it)->data) / 2;
     int w = std::get<5>((*it)->data) / 2;
+    /* upper left corner coordinates */
     int y = std::get<2>((*it)->data) - static_cast<int>(round(w*sin( Utils::D2R * angle) + h*cos( Utils::D2R * angle)));
     int x = std::get<1>((*it)->data) - static_cast<int>(round(w*cos( Utils::D2R * angle) - h*sin( Utils::D2R * angle)));
     Image::frame_target( y, x, h*2, w*2, angle, target_main_image);
 #endif
+    /* print center coordinates */
+    std::cout << std::get<0>((*it)->data) << '\t' << std::get<1>((*it)->data) << '\t' << std::get<2>((*it)->data) << std::endl;
   }
 
 #if FRAME_TARGET==1
