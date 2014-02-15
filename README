@@ -1,0 +1,93 @@
+TEMPLATE MATCHING - Intel Accelerate Your Code autumn 2013
+
+Albert Zaharovits albert.zaharovits@gmail.com
+15.02.2014
+
+This solution is based on the color-ciratefi algorithm for
+Rotation-Scale-Translation invariant template matching algorithm. [1]
+All normalized correlation coefficients are computed using the formulas
+in this paper.
+
+THIS IMPLEMENTATION OUTPUTS THE CENTER OF THE MATCHED TEMPLATES IN
+THE MAIN IMAGE, AS THIS PASSES THE TESTS.
+
+The algorithm is comprised of 3 chained filters, each promoting pixels
+to the next filter. 
+They operate on the Cie L*a*b color space.
+Paralelization is done on a per-line basis using OPENMP, meaning each 
+thread is assigned subsequent lines in the main image.
+Result pixels are clustered using S-Link algorithm and only the "best"
+pixel is displayed.
+
+CiraTefi implementation:
+
+ControlDict.h is the configuration file. From this file one can change
+sampling parameters, to balance the speed of execution with the miss
+rate. There are also debug flags such as SHOW_FILTERS which outputs
+intermediate pixels passing each subsequent filters, colored in 
+MAGENTA over the main image. Another such flag is FRAME_TARGET which
+outputs framed templates in the main image.
+
+Initially templates are radial sampled, scaled and circular sampled; 
+this data resides in memory for the whole program execution.
+
+The first filter is a circular invariant filter. The output of this
+filter is the mean pixel value for each increasing concentric circles.
+So every position in the sampling vector is the mean pixel value
+for the corresponding circle. Different scaled templates have different
+sampling vectors, but the same rotated template has the same sampling
+vector. This filter is applied on each scaled templated as well
+as on each pixel in the main image. The radius of these concentric
+circles increseases with a fixed step. The step is adjustable via
+parameters, as well as auto-adjusting depending on the template size.
+Therefore scaled templates have more/fewer concentric circles with
+fixed radius increments, rather than a constant number of circles but
+with various radius increments. This strategy has the benefit that
+sampling the main image can be done in an incrementing manner; 
+sampling radius is increased monotonicaly and correlation is computed
+with every template, when the number of samples match.
+This is the most computationaly
+demanding section of code. Main image circular sampling is vectorized
+using Intel Cilk Plus extensions. This filter is applied ONLY on
+the luminance component of the main image and templates. For each pixel 
+a normalized correlation coeffient is computed and if the value 
+exceeds a certain threashold it is promoted as a second order filter.
+
+Second order pixels also carry the information regarding which template
+and at which scale the correlation coefficient exceaded the threshold.
+For each such pixel a second filter is applied. Using the scale info
+from the previous filter, each corresponding pixel in main image is
+radialy sampled. The output of this filter is a vector
+representing the mean values for pixels on radial lines, with fixed
+angle increments. This filter is applied on all color maps, luminance,
+a-chromaticy b-chromaticy. The correlation is computed using the
+formulas in [1]. After this filter the pixels are promoted as third
+grade pixels.
+
+For all third grade pixels in main image, using the scale and rotation
+information from previous filters, the brighteness-contrast invariant
+correlation is computed. This filter is also computed on all color maps.
+
+Parallelization:
+Each thread gets subsequent lines in main image, and applies the ciratefi
+algorithm described before. The first filter, circular sampling the main
+image, is the most computational intensive segment of code. Therefore
+void Image::circle_pix_mean( unsigned int yc, unsigned int xc, unsigned int dx,
+                              unsigned int r,
+                              const Image::ColorImage& im, fp* _l);
+uses Cilk array notation for vectorization. Pixels next to each other on the
+line have their circle mean value computed simultaneous, using vector
+operations. All memory allocation have been done using the posix_memallign
+function to facilitate this.
+Result list is appended inside an omp critical region.
+
+Clustering is done using the s-link algorithm, with the minimum template
+radius as the maximum distance in the algorithm. As this operation of
+clustering is not parallized, and can be many such pixels, this operation
+is done using a Disjoint-Set data structure (Union, Find operations).
+For each cluster, the pixel with the highest brighteness-contrast 
+correlation is swappend with the cluster parent; only this parrent is
+displayed as a result.
+
+
+[1] http://www.iwssip.org/archive/2010/Proceedings/nav/papers/paper_25.pdf
