@@ -1,0 +1,1 @@
+bench #1 : as simple as possible to test your code and compile environment, with 2 pixel perfect copies of the original pattern (no rotations, no scaling, ...)
